@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { slide } from 'svelte/transition';
-	import { initialCategories } from '$lib/categories';
+	import { initialCategories, sampleCategories } from '$lib/categories';
 	import type { Item } from '$lib/categories';
 	import CategoryCard from '$lib/components/CategoryCard.svelte';
 	import InlineSummary from '$lib/components/InlineSummary.svelte';
@@ -47,9 +47,25 @@
 	const coreCats   = $derived(categories.filter((c) => !c.outsideProject && c.id !== 'before' && c.id !== 'after'));
 	// After: maintenance & ops
 	const afterCats  = $derived(categories.filter((c) => c.id === 'after'));
+
+	function loadSample() {
+		categories = sampleCategories();
+	}
 </script>
 
 <div class="page">
+	<div class="app-header">
+		<div class="logo">
+			<svg class="logo-icon" width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true">
+				<rect x="2" y="5" width="16" height="5" rx="2.5" fill="#ffd966"/>
+				<rect x="2" y="12" width="24" height="5" rx="2.5" fill="#f4a460"/>
+				<rect x="2" y="19" width="11" height="5" rx="2.5" fill="#a8d8a8"/>
+			</svg>
+			<span class="logo-text">TrueEstimate</span>
+		</div>
+		<button class="btn-sample" onclick={loadSample}>Load Sample Project</button>
+	</div>
+
 	<header class="hero">
 		<h1>The work is never just&nbsp;"the&nbsp;work"</h1>
 		<p class="hero-sub">
@@ -176,10 +192,57 @@
 		padding: 2.5rem 1.5rem 2rem;
 	}
 
+	/* ── App header ─────────────────────────────────── */
+	.app-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 0.75rem 0 1.5rem;
+		margin-bottom: 0.5rem;
+		border-bottom: 1px solid var(--border);
+	}
+
+	.logo {
+		display: flex;
+		align-items: center;
+		gap: 0.55rem;
+		text-decoration: none;
+	}
+
+	.logo-icon {
+		flex-shrink: 0;
+	}
+
+	.logo-text {
+		font-size: 1.1rem;
+		font-weight: 700;
+		letter-spacing: -0.02em;
+		color: var(--text);
+	}
+
+	.btn-sample {
+		font-size: 0.8rem;
+		font-weight: 600;
+		padding: 0.45rem 1rem;
+		border-radius: 8px;
+		border: 1.5px solid var(--border);
+		background: transparent;
+		color: var(--text-muted);
+		cursor: pointer;
+		transition: border-color 0.15s, color 0.15s, background 0.15s;
+	}
+
+	.btn-sample:hover {
+		border-color: #c8a830;
+		color: #7a6010;
+		background: rgba(255, 217, 102, 0.08);
+	}
+
 	/* ── Hero ────────────────────────────────────────── */
 	.hero {
 		text-align: center;
 		margin-bottom: 2.5rem;
+		margin-top: 1.75rem;
 	}
 
 	.hero h1 { margin-bottom: 0.75rem; }

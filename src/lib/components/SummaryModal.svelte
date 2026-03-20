@@ -2,6 +2,7 @@
 	import { fade, fly } from 'svelte/transition';
 	import type { Category } from '$lib/categories';
 	import { buildCsv, coreWeeks, totalWeeks } from '$lib/categories';
+	import GanttChart from './GanttChart.svelte';
 
 	let {
 		categories,
@@ -118,6 +119,14 @@
 				</div>
 			{/if}
 
+			<!-- Gantt timeline -->
+			{#if total > 0}
+				<div class="timeline-section">
+					<h3 class="section-title">Project timeline</h3>
+					<GanttChart {categories} />
+				</div>
+			{/if}
+
 			<!-- Item detail list (collapsible per category) -->
 			{#if categories.some((c) => c.items.length > 0)}
 				<div class="item-list">
@@ -172,7 +181,7 @@
 		border-radius: var(--radius);
 		box-shadow: var(--shadow-lg);
 		width: 100%;
-		max-width: 660px;
+		max-width: 780px;
 		max-height: 90vh;
 		display: flex;
 		flex-direction: column;
@@ -289,6 +298,13 @@
 		line-height: 1.55;
 	}
 	.callout-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 0.05rem; }
+
+	/* Timeline section */
+	.timeline-section {
+		display: flex;
+		flex-direction: column;
+		gap: 0;
+	}
 
 	/* Item list */
 	.section-title {

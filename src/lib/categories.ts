@@ -25,7 +25,7 @@ export const CATEGORIES: Omit<Category, 'items'>[] = [
 		color: '#c8c8c8',
 		textColor: '#333333',
 		isCore: false,
-		outsideProject: true
+		outsideProject: false
 	},
 	{
 		id: 'to-get',
@@ -116,6 +116,56 @@ export function coreWeeks(categories: Category[]): number {
 		.filter((c) => c.isCore)
 		.flatMap((c) => c.items)
 		.reduce((sum, i) => sum + (i.weeks ?? 0), 0);
+}
+
+export function sampleCategories(): Category[] {
+	const cats = initialCategories();
+	const add = (id: string, items: { description: string; weeks: number | null }[]) => {
+		const cat = cats.find((c) => c.id === id)!;
+		cat.items = items.map((i) => ({ ...i, id: crypto.randomUUID() }));
+	};
+
+	add('around', [
+		{ description: 'Weekly standups & async updates', weeks: 0.5 },
+		{ description: 'Sprint planning & retrospectives', weeks: 0.5 },
+		{ description: 'Client status reports', weeks: 0.25 }
+	]);
+	add('to-get', [
+		{ description: 'Discovery call & requirements scoping', weeks: 0.5 },
+		{ description: 'Proposal, estimate & contract', weeks: 0.5 }
+	]);
+	add('before', [
+		{ description: 'Dev environment & repo setup', weeks: 0.5 },
+		{ description: 'CI/CD pipeline & staging environment', weeks: 0.5 },
+		{ description: 'Design system & component library scaffold', weeks: 0.5 }
+	]);
+	add('the-work', [
+		{ description: 'Authentication & user accounts', weeks: 1 },
+		{ description: 'Dashboard & data visualisation', weeks: 1.5 },
+		{ description: 'Core data tables with filtering & search', weeks: 1 },
+		{ description: 'REST API integration', weeks: 1 },
+		{ description: 'Email notifications', weeks: 0.5 },
+		{ description: 'Mobile-responsive polish', weeks: 0.5 }
+	]);
+	add('between', [
+		{ description: 'Bug fixes from client review rounds', weeks: 0.5 },
+		{ description: 'Performance optimisation', weeks: 0.5 },
+		{ description: 'Code review & refactoring', weeks: 0.5 }
+	]);
+	add('beyond', [
+		{ description: 'Feature additions from stakeholder feedback', weeks: 1 },
+		{ description: 'Design revisions after visual review', weeks: 0.5 }
+	]);
+	add('outside', [
+		{ description: 'Third-party API delays or breaking changes', weeks: 0.5 },
+		{ description: 'Contingency buffer', weeks: 0.5 }
+	]);
+	add('after', [
+		{ description: 'Monthly dependency upgrades', weeks: 0.25 },
+		{ description: 'Bug monitoring & patch releases', weeks: 0.25 }
+	]);
+
+	return cats;
 }
 
 export function hiddenWeeks(categories: Category[]): number {
