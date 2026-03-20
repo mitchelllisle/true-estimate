@@ -1,11 +1,17 @@
 <script lang="ts">
+	import { slide } from 'svelte/transition';
 	import { initialCategories } from '$lib/categories';
 	import type { Item } from '$lib/categories';
 	import CategoryCard from '$lib/components/CategoryCard.svelte';
 	import InlineSummary from '$lib/components/InlineSummary.svelte';
 	import SummaryModal from '$lib/components/SummaryModal.svelte';
+
 	let categories = $state(initialCategories());
 	let modalOpen = $state(false);
+
+	let openBefore = $state(true);
+	let openCore   = $state(true);
+	let openAfter  = $state(true);
 
 	function addItem(categoryId: string) {
 		categories = categories.map((c) =>
@@ -35,10 +41,12 @@
 		);
 	}
 
-	const outsideCats = $derived(categories.filter((c) => c.outsideProject));
-	const beforeCats  = $derived(categories.filter((c) => c.id === 'before'));
-	const coreCat     = $derived(categories.find((c) => c.isCore) as Category);
-	const afterCats   = $derived(categories.filter((c) => !c.outsideProject && !c.isCore && c.id !== 'before'));
+	// Before: admin + acquisition + preparation
+	const beforeCats = $derived(categories.filter((c) => c.outsideProject || c.id === 'before'));
+	// Core: the work itself + iteration + changes + surprises
+	const coreCats   = $derived(categories.filter((c) => !c.outsideProject && c.id !== 'before' && c.id !== 'after'));
+	// After: maintenance & ops
+	const afterCats  = $derived(categories.filter((c) => c.id === 'after'));
 </script>
 
 <div class="page">
@@ -51,75 +59,86 @@
 
 	<main class="content">
 
-		<!-- ── Outside the project scope ───────────────────────── -->
-		<div class="scope scope--outside" aria-label="Outside the project scope">
-			<div class="scope-header">
-				<span class="scope-title">Outside the project scope</span>
-				<span class="scope-hint">Real costs, rarely estimated</span>
-			</div>
-			<div class="card-stack">
-				{#each outsideCats as category (category.id)}
-					<CategoryCard
-						{category}
-						onadditem={addItem}
-						onupdateitem={updateItem}
-						onremoveitem={removeItem}
-					/>
-				{/each}
-			</div>
-		</div>
+		<!-- ── Before the work ─────────────────────────────────── -->
+		<section class="scope scope--before">
+			<button
+				class="scope-toggle"
+				onclick={() => (openBefore = !openBefore)}
+				aria-expanded={openBefore}
+			>
+				<div class="scope-toggle-text">
+					<span class="scope-title">Before the work</span>
+					<span class="scope-hint">Setup, acquisition &amp; preparation</span>
+				</div>
+				<span class="chevron" class:is-open={openBefore} aria-hidden="true">›</span>
+			</button>
+			{#if openBefore}
+				<div class="card-stack" transition:slide={{ duration: 220 }}>
+					{#each beforeCats as category (category.id)}
+						<CategoryCard
+							{category}
+							onadditem={addItem}
+							onupdateitem={updateItem}
+							onremoveitem={removeItem}
+						/>
+					{/each}
+				</div>
+			{/if}
+		</section>
 
-		<!-- ── The project ──────────────────────────────────────── -->
-		<div class="scope scope--project" aria-label="The project">
-			<div class="scope-header">
-				<span class="scope-title">The project</span>
-			</div>
+		<!-- ── The actual work ─────────────────────────────────── -->
+		<section class="scope scope--core">
+			<button
+				class="scope-toggle"
+				onclick={() => (openCore = !openCore)}
+				aria-expanded={openCore}
+			>
+				<div class="scope-toggle-text">
+					<span class="scope-title">The actual work</span>
+					<span class="scope-hint">What you estimate — and everything around it</span>
+				</div>
+				<span class="chevron" class:is-open={openCore} aria-hidden="true">›</span>
+			</button>
+			{#if openCore}
+				<div class="card-stack" transition:slide={{ duration: 220 }}>
+					{#each coreCats as category (category.id)}
+						<CategoryCard
+							{category}
+							onadditem={addItem}
+							onupdateitem={updateItem}
+							onremoveitem={removeItem}
+						/>
+					{/each}
+				</div>
+			{/if}
+		</section>
 
-			<!-- Before the work -->
-			<div class="phase-row">
-				<span class="phase-chip phase-chip--before">Before the work</span>
-				<span class="phase-rule" aria-hidden="true"></span>
-			</div>
-			<div class="card-stack">
-				{#each beforeCats as category (category.id)}
-					<CategoryCard
-						{category}
-						onadditem={addItem}
-						onupdateitem={updateItem}
-						onremoveitem={removeItem}
-					/>
-				{/each}
-			</div>
-
-			<!-- The work -->
-			<div class="phase-row phase-row--core">
-				<span class="phase-chip phase-chip--core">⭐ The work</span>
-				<span class="phase-sub">what you'll actually estimate</span>
-				<span class="phase-rule" aria-hidden="true"></span>
-			</div>
-			<CategoryCard
-				category={coreCat}
-				onadditem={addItem}
-				onupdateitem={updateItem}
-				onremoveitem={removeItem}
-			/>
-
-			<!-- After the work -->
-			<div class="phase-row">
-				<span class="phase-chip phase-chip--after">After the work</span>
-				<span class="phase-rule" aria-hidden="true"></span>
-			</div>
-			<div class="card-stack">
-				{#each afterCats as category (category.id)}
-					<CategoryCard
-						{category}
-						onadditem={addItem}
-						onupdateitem={updateItem}
-						onremoveitem={removeItem}
-					/>
-				{/each}
-			</div>
-		</div>
+		<!-- ── After the work ──────────────────────────────────── -->
+		<section class="scope scope--after">
+			<button
+				class="scope-toggle"
+				onclick={() => (openAfter = !openAfter)}
+				aria-expanded={openAfter}
+			>
+				<div class="scope-toggle-text">
+					<span class="scope-title">After the work</span>
+					<span class="scope-hint">Maintenance, ops &amp; support</span>
+				</div>
+				<span class="chevron" class:is-open={openAfter} aria-hidden="true">›</span>
+			</button>
+			{#if openAfter}
+				<div class="card-stack" transition:slide={{ duration: 220 }}>
+					{#each afterCats as category (category.id)}
+						<CategoryCard
+							{category}
+							onadditem={addItem}
+							onupdateitem={updateItem}
+							onremoveitem={removeItem}
+						/>
+					{/each}
+				</div>
+			{/if}
+		</section>
 
 	</main>
 
@@ -176,38 +195,63 @@
 	.content {
 		display: flex;
 		flex-direction: column;
-		gap: 1.5rem;
+		gap: 1.25rem;
 	}
 
-	/* ── Scope containers ────────────────────────────── */
+	/* ── Scope sections ──────────────────────────────── */
 	.scope {
 		border-radius: 12px;
-		padding: 1rem 1.25rem 1.25rem;
+		overflow: hidden;
 	}
 
-	.scope--outside {
-		border: 2px dashed #c0c0c0;
-		background: rgba(200, 200, 200, 0.04);
+	.scope--before {
+		border: 2px dashed #d4956a;
+		background: rgba(244, 164, 96, 0.04);
 	}
 
-	.scope--project {
-		border: 2px solid var(--border);
-		background: rgba(255, 255, 255, 0.5);
+	.scope--core {
+		border: 2px dashed #c8a830;
+		background: rgba(255, 217, 102, 0.05);
 	}
 
-	.scope-header {
+	.scope--after {
+		border: 2px dashed #6a9ec0;
+		background: rgba(125, 171, 208, 0.05);
+	}
+
+	/* ── Toggle header ───────────────────────────────── */
+	.scope-toggle {
+		width: 100%;
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		padding: 0.9rem 1.25rem;
+		background: transparent;
+		border: none;
+		cursor: pointer;
+		text-align: left;
+		border-radius: 0;
+	}
+
+	.scope-toggle:hover {
+		background: rgba(0, 0, 0, 0.03);
+	}
+
+	.scope-toggle-text {
 		display: flex;
 		align-items: baseline;
 		gap: 0.65rem;
-		margin-bottom: 0.85rem;
+		flex: 1;
+		min-width: 0;
 	}
 
 	.scope-title {
-		font-size: 0.68rem;
+		font-size: 0.72rem;
 		font-weight: 700;
 		text-transform: uppercase;
 		letter-spacing: 0.08em;
 		color: var(--text-muted);
+		white-space: nowrap;
 	}
 
 	.scope-hint {
@@ -215,66 +259,25 @@
 		color: #9ca3af;
 	}
 
+	.chevron {
+		font-size: 1.1rem;
+		color: var(--text-muted);
+		line-height: 1;
+		transition: transform 0.2s ease;
+		transform: rotate(0deg);
+		flex-shrink: 0;
+	}
+
+	.chevron.is-open {
+		transform: rotate(90deg);
+	}
+
 	/* ── Card stacks ─────────────────────────────────── */
 	.card-stack {
 		display: flex;
 		flex-direction: column;
 		gap: 0.55rem;
-	}
-
-	/* ── Phase dividers ──────────────────────────────── */
-	.phase-row {
-		display: flex;
-		align-items: center;
-		gap: 0.6rem;
-		margin: 1.1rem 0 0.5rem;
-	}
-
-	.phase-row--core {
-		margin-top: 1.4rem;
-	}
-
-	.phase-chip {
-		flex-shrink: 0;
-		font-size: 0.65rem;
-		font-weight: 700;
-		text-transform: uppercase;
-		letter-spacing: 0.08em;
-		padding: 0.2rem 0.6rem;
-		border-radius: 999px;
-		white-space: nowrap;
-	}
-
-	.phase-chip--before {
-		background: #fff3e0;
-		color: #a04000;
-		border: 1px solid #f4a460;
-	}
-
-	.phase-chip--core {
-		background: #fffbeb;
-		color: #92650a;
-		border: 1px solid #fde68a;
-		font-size: 0.7rem;
-	}
-
-	.phase-chip--after {
-		background: #f0fdf4;
-		color: #166534;
-		border: 1px solid #a8d8a8;
-	}
-
-	.phase-sub {
-		font-size: 0.68rem;
-		color: var(--text-muted);
-		flex-shrink: 0;
-	}
-
-	.phase-rule {
-		flex: 1;
-		display: block;
-		height: 1px;
-		background: var(--border);
+		padding: 0 1.25rem 1.25rem;
 	}
 
 	/* ── Footer ──────────────────────────────────────── */
