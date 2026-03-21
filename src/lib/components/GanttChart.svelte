@@ -42,8 +42,30 @@
 	// When chart updates, expand any newly-added bars by default
 	$effect(() => {
 		if (!chart) return;
-		const allIds = chart.bars.filter(b => b.items.length > 0).map(b => b.id);
-		expandedBars = new Set(allIds);
+
+		// Bar ids that currently exist and have items
+		const allIds = new Set(
+			chart.bars
+				.filter((b) => b.items.length > 0)
+				.map((b) => b.id)
+		);
+
+		// Start with previously expanded bars that still exist
+		const next = new Set<string>();
+		for (const id of expandedBars) {
+			if (allIds.has(id)) {
+				next.add(id);
+			}
+		}
+
+		// Auto-expand any newly-added bars
+		for (const id of allIds) {
+			if (!next.has(id)) {
+				next.add(id);
+			}
+		}
+
+		expandedBars = next;
 	});
 
 	function toggleBar(id: string) {
