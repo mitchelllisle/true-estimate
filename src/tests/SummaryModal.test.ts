@@ -73,7 +73,7 @@ describe('SummaryModal', () => {
 
 	it('shows item descriptions in the "All items" section', () => {
 		render(SummaryModal, { categories: categoriesWithData(), onclose: () => {} });
-		expect(screen.getByText('Build the thing')).toBeInTheDocument();
-		expect(screen.getByText('Setup env')).toBeInTheDocument();
+		expect(screen.getAllByText('Build the thing').length).toBeGreaterThan(0);
+		expect(screen.getAllByText('Setup env').length).toBeGreaterThan(0);
 	});
 });

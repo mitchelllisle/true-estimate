@@ -19,6 +19,12 @@
 	let openAfter  = $state(true);
 	let unit       = $state<Unit>('weeks');
 
+	let globalNotes = $state<{ open: boolean; tick: number } | null>(null);
+	const allNotesOpen = $derived(globalNotes?.open ?? false);
+	function setGlobalNotes(open: boolean) {
+		globalNotes = { open, tick: (globalNotes?.tick ?? 0) + 1 };
+	}
+
 	let darkMode = $state(false);
 	onMount(() => {
 		const saved = localStorage.getItem('theme');
@@ -29,14 +35,14 @@
 		localStorage.setItem('theme', darkMode ? 'dark' : 'light');
 	});
 
-	function addItem(categoryId: string, description = '') {
+	function addItem(categoryId: string, description = '', notes = '') {
 		categories = categories.map((c) =>
 			c.id === categoryId
 				? {
 						...c,
 						items: [
 							...c.items,
-							{ id: crypto.randomUUID(), description, weeks: null }
+							{ id: crypto.randomUUID(), description, notes, weeks: null }
 						]
 					}
 				: c
@@ -175,6 +181,12 @@
 	</header>
 
 	<main class="content">
+		<div class="view-controls">
+			<span class="view-controls-label">Descriptions</span>
+			<button class="view-ctrl-btn" onclick={() => setGlobalNotes(true)} disabled={allNotesOpen}>Expand all</button>
+			<span class="view-ctrl-sep">·</span>
+			<button class="view-ctrl-btn" onclick={() => setGlobalNotes(false)} disabled={!allNotesOpen}>Collapse all</button>
+		</div>
 
 		<!-- ── Before the work ─────────────────────────────────── -->
 		<section class="scope scope--before">
@@ -198,7 +210,9 @@
 				<div class="card-stack" transition:slide={{ duration: 220 }}>
 					{#each beforeCats as category (category.id)}
 						<CategoryCard
-							{category}							{unit}							onadditem={addItem}
+							{category}							{unit}
+							notesExpanded={globalNotes}
+							onadditem={addItem}
 							onupdateitem={updateItem}
 							onremoveitem={removeItem}
 						/>
@@ -232,7 +246,9 @@
 				<div class="card-stack" transition:slide={{ duration: 220 }}>
 					{#each coreCats as category (category.id)}
 						<CategoryCard
-							{category}							{unit}							onadditem={addItem}
+							{category}							{unit}
+							notesExpanded={globalNotes}
+							onadditem={addItem}
 							onupdateitem={updateItem}
 							onremoveitem={removeItem}
 						/>
@@ -265,6 +281,7 @@
 						<CategoryCard
 							{category}
 							{unit}
+							notesExpanded={globalNotes}
 							onadditem={addItem}
 							onupdateitem={updateItem}
 							onremoveitem={removeItem}
@@ -571,6 +588,48 @@
 	.unit-select:focus {
 		outline: 2px solid var(--text);
 		outline-offset: 2px;
+	}
+
+	/* ── View controls ───────────────────────────────── */
+	.view-controls {
+		display: flex;
+		align-items: center;
+		justify-content: flex-end;
+		gap: 0.4rem;
+		font-size: 0.75rem;
+		color: var(--text-muted);
+	}
+
+	.view-controls-label {
+		font-weight: 600;
+		margin-right: 0.15rem;
+	}
+
+	.view-ctrl-btn {
+		background: none;
+		border: none;
+		padding: 0;
+		font: inherit;
+		font-size: 0.75rem;
+		color: var(--text-muted);
+		cursor: pointer;
+		text-decoration: underline;
+		text-underline-offset: 2px;
+		transition: color 0.15s;
+	}
+
+	.view-ctrl-btn:hover:not(:disabled) {
+		color: var(--text);
+	}
+
+	.view-ctrl-btn:disabled {
+		opacity: 0.35;
+		cursor: default;
+		text-decoration: none;
+	}
+
+	.view-ctrl-sep {
+		opacity: 0.4;
 	}
 
 	/* ── Page flow ───────────────────────────────────── */
