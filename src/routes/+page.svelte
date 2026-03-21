@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { slide } from 'svelte/transition';
-	import { initialCategories, sampleCategories, type Unit, UNITS, UNIT_LABELS, UNIT_SHORT, toUnit } from '$lib/categories';
+	import { initialCategories, sampleCategories, type SampleProject, type Unit, UNITS, UNIT_LABELS, UNIT_SHORT, toUnit } from '$lib/categories';
 	import type { Item } from '$lib/categories';
 	import CategoryCard from '$lib/components/CategoryCard.svelte';
 	import InlineSummary from '$lib/components/InlineSummary.svelte';
@@ -9,8 +9,9 @@
 	import ImportModal from '$lib/components/ImportModal.svelte';
 
 	let categories = $state(initialCategories());
-	let modalOpen   = $state(false);
-	let importOpen  = $state(false);
+	let modalOpen    = $state(false);
+	let importOpen   = $state(false);
+	let sampleOpen   = $state(false);
 
 	let openBefore = $state(true);
 	let openCore   = $state(true);
@@ -71,15 +72,24 @@
 	const coreTotal   = $derived(scopeTotal(coreCats));
 	const afterTotal  = $derived(scopeTotal(afterCats));
 
-	function loadSample() {
-		categories = sampleCategories();
+	function loadSample(type: SampleProject) {
+		categories = sampleCategories(type);
+		sampleOpen = false;
 	}
 
 	function handleImport(imported: typeof categories) {
 		categories = imported;
 		importOpen = false;
 	}
+
+	function handleWindowClick(e: MouseEvent) {
+		if (sampleOpen && !(e.target as Element).closest('.sample-dropdown')) {
+			sampleOpen = false;
+		}
+	}
 </script>
+
+<svelte:window onclick={handleWindowClick} />
 
 <div class="site-header">
 	<div class="site-header-inner">
@@ -111,7 +121,7 @@
 
 <div class="page">
 	<header class="hero">
-		<p class="hero-intro">
+		<div class="hero-intro">
 			<em class="hero-quote">"The work is never just 'the work'"</em> — for each task, enter how many
 			<select class="unit-select" bind:value={unit} aria-label="Estimate unit">
 				{#each UNITS as u}
@@ -120,9 +130,21 @@
 			</select>
 			of <strong>effort</strong> it takes — not how long it'll sit on the calendar.
 			The breakdown will show how it all lands in real time.
-			Not sure where to start? <button class="pill-btn" onclick={loadSample}>Load a sample project</button>
+			Not sure where to start?
+			<span class="sample-dropdown">
+				<button class="pill-btn" onclick={() => (sampleOpen = !sampleOpen)} aria-haspopup="true" aria-expanded={sampleOpen}>
+					Load a sample project <span class="chevron" aria-hidden="true">▾</span>
+				</button>
+				{#if sampleOpen}
+					<ul class="sample-menu" role="menu">
+						<li role="none"><button role="menuitem" onclick={() => loadSample('backend')}>Backend Project</button></li>
+						<li role="none"><button role="menuitem" onclick={() => loadSample('frontend')}>Front End Project</button></li>
+						<li role="none"><button role="menuitem" onclick={() => loadSample('data')}>Data &amp; Analytics Project</button></li>
+					</ul>
+				{/if}
+			</span>
 			or <button class="pill-btn" onclick={() => (importOpen = true)}>Upload a CSV</button>.
-		</p>
+		</div>
 	</header>
 
 	<main class="content">
@@ -348,6 +370,50 @@
 	.pill-btn:hover {
 		background: rgba(0, 0, 0, 0.05);
 		border-color: var(--text-muted);
+	}
+
+	.sample-dropdown {
+		position: relative;
+		display: inline-block;
+		vertical-align: middle;
+	}
+
+	.chevron {
+		font-size: 0.65rem;
+		margin-left: 0.2rem;
+	}
+
+	.sample-menu {
+		position: absolute;
+		top: calc(100% + 4px);
+		left: 0;
+		z-index: 50;
+		margin: 0;
+		padding: 0.25rem 0;
+		list-style: none;
+		background: var(--surface);
+		border: 1.5px solid var(--border);
+		border-radius: 8px;
+		box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+		min-width: 11rem;
+		white-space: nowrap;
+	}
+
+	.sample-menu button {
+		display: block;
+		width: 100%;
+		padding: 0.45rem 1rem;
+		background: none;
+		border: none;
+		text-align: left;
+		font: inherit;
+		font-size: 0.82rem;
+		color: var(--text);
+		cursor: pointer;
+	}
+
+	.sample-menu button:hover {
+		background: rgba(0,0,0,0.05);
 	}
 
 	.unit-select {

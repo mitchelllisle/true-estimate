@@ -118,7 +118,15 @@ export function coreWeeks(categories: Category[]): number {
 		.reduce((sum, i) => sum + (i.weeks ?? 0), 0);
 }
 
-export function sampleCategories(): Category[] {
+export type SampleProject = 'backend' | 'frontend' | 'data';
+
+export function sampleCategories(type: SampleProject = 'backend'): Category[] {
+	if (type === 'frontend') return sampleFrontendProject();
+	if (type === 'data') return sampleDataProject();
+	return sampleBackendProject();
+}
+
+function sampleBackendProject(): Category[] {
 	const cats = initialCategories();
 	const add = (id: string, items: { description: string; weeks: number | null }[]) => {
 		const cat = cats.find((c) => c.id === id)!;
@@ -163,6 +171,105 @@ export function sampleCategories(): Category[] {
 	add('after', [
 		{ description: 'Monthly dependency upgrades', weeks: 0.25 },
 		{ description: 'Bug monitoring & patch releases', weeks: 0.25 }
+	]);
+
+	return cats;
+}
+
+function sampleFrontendProject(): Category[] {
+	const cats = initialCategories();
+	const add = (id: string, items: { description: string; weeks: number | null }[]) => {
+		const cat = cats.find((c) => c.id === id)!;
+		cat.items = items.map((i) => ({ ...i, id: crypto.randomUUID() }));
+	};
+
+	add('around', [
+		{ description: 'Weekly standups & design reviews', weeks: 0.5 },
+		{ description: 'Sprint planning & retrospectives', weeks: 0.5 },
+		{ description: 'Stakeholder demos & feedback sessions', weeks: 0.25 }
+	]);
+	add('to-get', [
+		{ description: 'Discovery call & UX requirements', weeks: 0.5 },
+		{ description: 'Proposal, estimate & contract', weeks: 0.5 }
+	]);
+	add('before', [
+		{ description: 'Design system & component library setup', weeks: 1 },
+		{ description: 'Figma handoff & token extraction', weeks: 0.5 },
+		{ description: 'Build tooling & CI pipeline', weeks: 0.5 }
+	]);
+	add('the-work', [
+		{ description: 'Marketing / landing page', weeks: 1 },
+		{ description: 'Product listing & search pages', weeks: 1.5 },
+		{ description: 'Checkout & payment flow', weeks: 1.5 },
+		{ description: 'Authentication & account pages', weeks: 1 },
+		{ description: 'Responsive polish & accessibility audit', weeks: 1 },
+		{ description: 'Animation & micro-interactions', weeks: 0.5 }
+	]);
+	add('between', [
+		{ description: 'Cross-browser & device testing', weeks: 0.5 },
+		{ description: 'Design feedback iterations', weeks: 0.5 },
+		{ description: 'Performance & Lighthouse optimisation', weeks: 0.5 }
+	]);
+	add('beyond', [
+		{ description: 'Additional pages from stakeholder feedback', weeks: 1 },
+		{ description: 'Copy & asset updates after content review', weeks: 0.5 }
+	]);
+	add('outside', [
+		{ description: 'API contract changes from backend team', weeks: 0.5 },
+		{ description: 'Contingency buffer', weeks: 0.5 }
+	]);
+	add('after', [
+		{ description: 'Dependency & framework upgrades', weeks: 0.25 },
+		{ description: 'Bug triage & patch releases', weeks: 0.25 }
+	]);
+
+	return cats;
+}
+
+function sampleDataProject(): Category[] {
+	const cats = initialCategories();
+	const add = (id: string, items: { description: string; weeks: number | null }[]) => {
+		const cat = cats.find((c) => c.id === id)!;
+		cat.items = items.map((i) => ({ ...i, id: crypto.randomUUID() }));
+	};
+
+	add('around', [
+		{ description: 'Weekly stakeholder syncs & data demos', weeks: 0.5 },
+		{ description: 'Sprint planning & retrospectives', weeks: 0.25 },
+		{ description: 'Executive reporting & presentations', weeks: 0.5 }
+	]);
+	add('to-get', [
+		{ description: 'Data audit & requirements scoping', weeks: 1 },
+		{ description: 'Proposal, estimate & contract', weeks: 0.5 }
+	]);
+	add('before', [
+		{ description: 'Data warehouse & environment setup', weeks: 1 },
+		{ description: 'Pipeline scaffolding & orchestration config', weeks: 0.5 },
+		{ description: 'Access, credentials & source connections', weeks: 0.5 }
+	]);
+	add('the-work', [
+		{ description: 'Ingestion & ETL pipelines', weeks: 2 },
+		{ description: 'Data modelling & transformation layer', weeks: 1.5 },
+		{ description: 'KPI definitions & metrics catalogue', weeks: 0.5 },
+		{ description: 'Dashboard & reporting build', weeks: 1.5 },
+		{ description: 'Data quality checks & alerting', weeks: 0.5 }
+	]);
+	add('between', [
+		{ description: 'Data validation & reconciliation', weeks: 0.5 },
+		{ description: 'Model tuning from stakeholder review', weeks: 0.5 },
+		{ description: 'Query & pipeline performance optimisation', weeks: 0.5 }
+	]);
+	add('beyond', [
+		{ description: 'Additional metrics & dimensions requested', weeks: 1 },
+		{ description: 'New data source integrations', weeks: 0.5 }
+	]);
+	add('outside', [
+		{ description: 'Upstream schema or API changes', weeks: 0.5 },
+		{ description: 'Contingency buffer', weeks: 0.5 }
+	]);
+	add('after', [
+		{ description: 'Pipeline monitoring & incident response', weeks: 0.5 },
+		{ description: 'Schema migration & dependency upgrades', weeks: 0.25 }
 	]);
 
 	return cats;
