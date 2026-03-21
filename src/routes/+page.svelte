@@ -7,12 +7,14 @@
 	import InlineSummary from '$lib/components/InlineSummary.svelte';
 	import SummaryModal from '$lib/components/SummaryModal.svelte';
 	import ImportModal from '$lib/components/ImportModal.svelte';
+	import ConceptModal from '$lib/components/ConceptModal.svelte';
 
 	let categories   = $state(initialCategories());
 	let projectName  = $state(generateProjectName());
 	let showBreakdown = $state(false);
 	let importOpen   = $state(false);
 	let sampleOpen   = $state(false);
+	let conceptOpen  = $state(false);
 
 	let openBefore = $state(true);
 	let openCore   = $state(true);
@@ -142,7 +144,9 @@
 <div class="page">
 	<header class="hero">
 		<div class="hero-intro">
-			<em class="hero-quote">"The work is never just 'the work'"</em> — for each task, enter how many
+			<button class="hero-quote-btn" onclick={() => (conceptOpen = true)} aria-haspopup="dialog">
+				<em class="hero-quote">"The work is never just 'the work'"</em>
+			</button> — for each task, enter how many
 			<select class="unit-select" bind:value={unit} aria-label="Estimate unit">
 				{#each UNITS as u}
 					<option value={u}>{UNIT_LABELS[u]}</option>
@@ -320,6 +324,10 @@
 {/if}
 
 <InlineSummary {categories} {unit} {showBreakdown} {projectName} onOpenModal={() => (showBreakdown = !showBreakdown)} onUpload={() => (importOpen = true)} />
+
+{#if conceptOpen}
+	<ConceptModal onclose={() => (conceptOpen = false)} />
+{/if}
 
 {#if importOpen}
 	<ImportModal
@@ -506,6 +514,23 @@
 
 	.hero-intro .tip:hover::after {
 		opacity: 1;
+	}
+
+	.hero-quote-btn {
+		background: none;
+		border: none;
+		padding: 0;
+		font: inherit;
+		cursor: pointer;
+		color: inherit;
+		display: inline;
+		vertical-align: baseline;
+	}
+
+	.hero-quote-btn:hover .hero-quote {
+		text-decoration: underline;
+		text-decoration-style: dotted;
+		text-underline-offset: 2px;
 	}
 
 	.hero-quote {
@@ -717,18 +742,6 @@
 	.scope-hint {
 		font-size: 0.7rem;
 		color: var(--text-muted);
-	}
-
-	.scope-tally {
-		margin-left: auto;
-		font-size: 0.72rem;
-		font-weight: 600;
-		color: var(--text-muted);
-		background: var(--tally-bg);
-		border-radius: 999px;
-		padding: 0.15rem 0.55rem;
-		white-space: nowrap;
-		flex-shrink: 0;
 	}
 
 	.scope-pills {
