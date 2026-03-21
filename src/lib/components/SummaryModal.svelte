@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { fade, fly } from 'svelte/transition';
 	import type { Category } from '$lib/categories';
-	import { buildCsv, coreWeeks, totalWeeks, getCalendarWeeks, getElapsedBreakdown, getRiskAssessment, type Unit, toUnit, UNIT_LABELS, UNIT_SHORT } from '$lib/categories';
+	import { buildCsv, coreWeeks, totalWeeks, getCalendarWeeks, getElapsedBreakdown, getRiskAssessment, getEmptyWarnings, type Unit, toUnit, UNIT_LABELS, UNIT_SHORT } from '$lib/categories';
 	import GanttChart from './GanttChart.svelte';
 
 	let {
@@ -34,6 +34,7 @@
 	const uParallel      = $derived(toUnit(parallelWeeks, unit));
 	const concurrentDesc = $derived(buildConcurrentDesc(elapsed));
 	const risk           = $derived(getRiskAssessment(categories));
+	const emptyWarnings  = $derived(getEmptyWarnings(categories));
 
 	function buildConcurrentDesc(el: typeof elapsed): string {
 		const parts: string[] = [];
@@ -106,6 +107,20 @@
 		</header>
 
 		<div class="modal-body">
+			{#if emptyWarnings.length > 0}
+				<div class="incomplete-banner">
+					<div class="incomplete-header">
+						<span class="incomplete-icon" aria-hidden="true">⚠</span>
+						<span class="incomplete-title">Some categories have no items</span>
+					</div>
+					<p class="incomplete-body">These were left empty — they're often where estimates fall short. Worth a second look before sharing:</p>
+					<div class="incomplete-cats">
+						{#each emptyWarnings as w}
+							<span class="incomplete-cat" style="background: {w.color}; color: {w.textColor};">{w.subtitle}</span>
+						{/each}
+					</div>
+				</div>
+			{/if}
 			{#if risk}
 				<div class="risk-banner risk--{risk.level}">
 					<div class="risk-header">
@@ -784,6 +799,64 @@
 		font-size: 0.85rem;
 	}
 	.close-text-btn:hover { color: var(--text); background: var(--bg); }
+
+	/* Incomplete categories warning */
+	.incomplete-banner {
+		padding: 0.9rem 2rem;
+		border-bottom: 1px solid var(--border);
+		background: #fffbeb;
+		flex-shrink: 0;
+	}
+
+	:global([data-theme="dark"]) .incomplete-banner {
+		background: rgba(180, 120, 0, 0.12);
+	}
+
+	.incomplete-header {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		margin-bottom: 0.4rem;
+	}
+
+	.incomplete-icon {
+		font-size: 0.9rem;
+		color: #b45309;
+	}
+
+	:global([data-theme="dark"]) .incomplete-icon { color: #fbbf24; }
+
+	.incomplete-title {
+		font-size: 0.88rem;
+		font-weight: 700;
+		color: #92400e;
+	}
+
+	:global([data-theme="dark"]) .incomplete-title { color: #fde68a; }
+
+	.incomplete-body {
+		font-size: 0.8rem;
+		color: #92400e;
+		opacity: 0.85;
+		margin: 0 0 0.6rem;
+		line-height: 1.5;
+	}
+
+	:global([data-theme="dark"]) .incomplete-body { color: #fde68a; }
+
+	.incomplete-cats {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.35rem;
+	}
+
+	.incomplete-cat {
+		font-size: 0.72rem;
+		font-weight: 700;
+		padding: 0.18rem 0.6rem;
+		border-radius: 999px;
+		opacity: 0.9;
+	}
 
 	@media print {
 		.modal-footer { display: none; }

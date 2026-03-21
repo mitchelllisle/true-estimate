@@ -29,14 +29,14 @@
 		localStorage.setItem('theme', darkMode ? 'dark' : 'light');
 	});
 
-	function addItem(categoryId: string) {
+	function addItem(categoryId: string, description = '') {
 		categories = categories.map((c) =>
 			c.id === categoryId
 				? {
 						...c,
 						items: [
 							...c.items,
-							{ id: crypto.randomUUID(), description: '', weeks: null }
+							{ id: crypto.randomUUID(), description, weeks: null }
 						]
 					}
 				: c
@@ -83,8 +83,11 @@
 		sampleOpen = false;
 	}
 
-	function handleImport(imported: typeof categories) {
+	function handleImport(imported: typeof categories, filename: string) {
 		categories = imported;
+		const stem = filename.replace(/\.csv$/i, '');
+		const namePart = stem.split('-')[0].trim();
+		if (namePart) projectName = namePart;
 		importOpen = false;
 	}
 
@@ -135,6 +138,7 @@
 				{/each}
 			</select>
 			of <strong>effort</strong> it takes — not how long it'll sit on the calendar.
+			Estimates are split into <span class="tip" data-tip="The stuff you typically think of when asked for an estimate.">Core</span> and <span class="tip" data-tip="The stuff you tend to leave out — work that has real-world impacts on delivery timelines and effort required.">Non-Core</span> work.
 			The breakdown will show how it all lands in real time.
 			Not sure where to start?
 			<span class="sample-dropdown">
@@ -185,7 +189,7 @@
 				</div>
 				{#if beforeTotal > 0}
 					<span class="scope-pills">
-						<span class="scope-pill pill--non-core">{beforeTotal}{UNIT_SHORT[unit]} Non-Core</span>
+						<span class="scope-pill pill--non-core">{beforeTotal}{UNIT_SHORT[unit]} <abbr title="The stuff you tend to leave out — work that has real-world impacts on delivery timelines and effort required.">Non-Core</abbr></span>
 					</span>
 				{/if}
 				<span class="chevron" class:is-open={openBefore} aria-hidden="true">›</span>
@@ -216,9 +220,9 @@
 				</div>
 				{#if coreTotal > 0}
 					<span class="scope-pills">
-						{#if uCoreExec > 0}<span class="scope-pill pill--core">{uCoreExec}{UNIT_SHORT[unit]} Core</span>{/if}
-						{#if uCoreExec > 0 && uCoreSurround > 0}<span class="pill-sep">+</span>{/if}
-						{#if uCoreSurround > 0}<span class="scope-pill pill--non-core">{uCoreSurround}{UNIT_SHORT[unit]} Non-Core</span>{/if}
+					{#if uCoreExec > 0}<span class="scope-pill pill--core">{uCoreExec}{UNIT_SHORT[unit]} <abbr title="The stuff you typically think of when asked for an estimate.">Core</abbr></span>{/if}
+					{#if uCoreExec > 0 && uCoreSurround > 0}<span class="pill-sep">+</span>{/if}
+					{#if uCoreSurround > 0}<span class="scope-pill pill--non-core">{uCoreSurround}{UNIT_SHORT[unit]} <abbr title="The stuff you tend to leave out — work that has real-world impacts on delivery timelines and effort required.">Non-Core</abbr></span>{/if}
 						{#if uCoreExec > 0 && uCoreSurround > 0}<span class="pill-sep">=</span><span class="scope-pill pill--total">{coreTotal}{UNIT_SHORT[unit]}</span>{/if}
 					</span>
 				{/if}
@@ -250,7 +254,7 @@
 				</div>
 				{#if afterTotal > 0}
 					<span class="scope-pills">
-						<span class="scope-pill pill--non-core">{afterTotal}{UNIT_SHORT[unit]} Non-Core</span>
+						<span class="scope-pill pill--non-core">{afterTotal}{UNIT_SHORT[unit]} <abbr title="The stuff you tend to leave out — work that has real-world impacts on delivery timelines and effort required.">Non-Core</abbr></span>
 					</span>
 				{/if}
 				<span class="chevron" class:is-open={openAfter} aria-hidden="true">›</span>
@@ -432,6 +436,39 @@
 		font-size: 0.95rem;
 		color: var(--text-muted);
 		line-height: 1.8;
+	}
+
+	.hero-intro .tip {
+		position: relative;
+		text-decoration: underline dotted;
+		cursor: help;
+		color: var(--text);
+		font-weight: 500;
+	}
+
+	.hero-intro .tip::after {
+		content: attr(data-tip);
+		position: absolute;
+		bottom: calc(100% + 6px);
+		left: 50%;
+		transform: translateX(-50%);
+		white-space: normal;
+		width: 220px;
+		background: var(--text);
+		color: var(--bg);
+		font-size: 0.75rem;
+		font-weight: 400;
+		line-height: 1.4;
+		padding: 6px 9px;
+		border-radius: 6px;
+		pointer-events: none;
+		opacity: 0;
+		transition: opacity 0.1s ease;
+		z-index: 100;
+	}
+
+	.hero-intro .tip:hover::after {
+		opacity: 1;
 	}
 
 	.hero-quote {
@@ -636,6 +673,11 @@
 	.pill--core {
 		background: rgba(255, 217, 102, 0.25);
 		color: #7a5c00;
+	}
+	.pill--core abbr,
+	.pill--non-core abbr {
+		text-decoration: underline dotted;
+		cursor: help;
 	}
 	:global([data-theme="dark"]) .pill--core {
 		background: rgba(255, 217, 102, 0.15);
