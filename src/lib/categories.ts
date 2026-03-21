@@ -412,23 +412,20 @@ export function getRiskAssessment(categories: Category[]): RiskAssessment | null
 
 	if (underestimationPct < 35) {
 		level = 'low';
-		headline = 'Low probability of overrun — core effort closely reflects the true total';
-		explanation = `A core-only quote would miss about ${underestimationPct}% of the actual work. `
-			+ `Non-core activities${nonCoreCats.length > 0 ? ` (${topNames})` : ''} are modest relative to the deliverable. `
-			+ `The chance of a significant blowout from unquoted work is low.`;
+		headline = 'Your estimate is highly accurate — very little hidden work found';
+		explanation = `The non-core work${nonCoreCats.length > 0 ? ` (${topNames})` : ''} makes up only ${underestimationPct}% of the total. `
+			+ `A core-only quote would have been close — but you've still captured the full picture here.`;
 	} else if (underestimationPct < 60) {
 		level = 'medium';
-		headline = 'Medium probability of overrun — non-core effort is material';
-		explanation = `A core-only quote would underestimate the true total by about ${underestimationPct}%. `
-			+ `The main contributors are ${topNames}. `
-			+ `There is a meaningful chance of cost overruns if these categories aren't surfaced in the quote.`;
+		headline = 'Solid catch — you\'ve surfaced work a core-only quote would have missed';
+		explanation = `By accounting for the non-core effort, this estimate is ${underestimationPct}% more complete than a deliverable-only quote. `
+			+ `The hidden work (${topNames}) represents real time that would have gone unquoted without this breakdown.`;
 	} else {
 		level = 'high';
-		headline = 'High probability of overrun — surrounding work matches or exceeds the core';
-		explanation = `A core-only quote would miss ${underestimationPct}% of the actual work — `
-			+ `meaning the surrounding work is as large as (or larger than) the deliverable itself. `
-			+ `The primary contributors are ${topNames}. `
-			+ `Without quoting the full picture, cost overruns are highly likely.`;
+		headline = 'Major accuracy win — the surrounding work is as large as the core itself';
+		explanation = `A core-only quote would have captured only ${100 - underestimationPct}% of the actual effort. `
+			+ `This estimate is ${underestimationPct}% more complete because it includes ${topNames} — `
+			+ `work that almost always gets missed when quoting only the deliverable.`;
 	}
 
 	return { level, underestimationPct, drivers, headline, explanation };

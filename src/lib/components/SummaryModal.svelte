@@ -109,14 +109,14 @@
 			{#if risk}
 				<div class="risk-banner risk--{risk.level}">
 					<div class="risk-header">
-						<span class="risk-badge">{risk.level.charAt(0).toUpperCase() + risk.level.slice(1)} Probability</span>
+						<span class="risk-badge">{risk.level === 'low' ? 'Accurate' : risk.level === 'medium' ? 'More Complete' : 'Much More Complete'}</span>
 						<span class="risk-headline">{risk.headline}</span>
-						<span class="risk-miss">Core-only quote misses <strong>~{risk.underestimationPct}%</strong> of total effort</span>
+						<span class="risk-miss">Non-core work is <strong>~{risk.underestimationPct}%</strong> of total effort</span>
 					</div>
 					<p class="risk-explanation">{risk.explanation}</p>
 					{#if risk.drivers.length > 0}
 						<div class="risk-drivers">
-							<span class="risk-drivers-label">Top drivers:</span>
+							<span class="risk-drivers-label">Hidden work found:</span>
 							{#each risk.drivers as d}
 								<span class="risk-driver-pill">{d.subtitle} <span class="driver-pct">{d.pct}%</span></span>
 							{/each}
@@ -532,7 +532,7 @@
 	}
 
 	/* level-specific colours */
-	/* low = blue */
+	/* low = light blue */
 	.risk--low {
 		background: #eff6ff;
 		color: #1e40af;
@@ -540,32 +540,32 @@
 	.risk--low .risk-badge { background: #bfdbfe; color: #1e3a8a; }
 	.risk--low .risk-driver-pill { color: #1d4ed8; }
 
-	/* medium = orange */
+	/* medium = teal */
 	.risk--medium {
-		background: #fff7ed;
-		color: #9a3412;
+		background: #f0fdfa;
+		color: #0f766e;
 	}
-	.risk--medium .risk-badge { background: #fed7aa; color: #7c2d12; }
-	.risk--medium .risk-driver-pill { color: #c2410c; }
+	.risk--medium .risk-badge { background: #99f6e4; color: #134e4a; }
+	.risk--medium .risk-driver-pill { color: #0d9488; }
 
-	/* high = red/pink */
+	/* high = green */
 	.risk--high {
-		background: #fef2f2;
-		color: #991b1b;
+		background: #f0fdf4;
+		color: #166534;
 	}
-	.risk--high .risk-badge { background: #fecaca; color: #7f1d1d; }
-	.risk--high .risk-driver-pill { color: #dc2626; }
+	.risk--high .risk-badge { background: #bbf7d0; color: #14532d; }
+	.risk--high .risk-driver-pill { color: #15803d; }
 
 	/* Dark mode overrides */
 	:global([data-theme="dark"]) .risk--low    { background: rgba(30,80,200,0.12); color: #93c5fd; }
 	:global([data-theme="dark"]) .risk--low .risk-badge { background: rgba(30,80,200,0.28); color: #bfdbfe; }
 	:global([data-theme="dark"]) .risk--low .risk-driver-pill { color: #93c5fd; }
-	:global([data-theme="dark"]) .risk--medium { background: rgba(200,80,20,0.16); color: #fdba74; }
-	:global([data-theme="dark"]) .risk--medium .risk-badge { background: rgba(200,80,20,0.32); color: #fed7aa; }
-	:global([data-theme="dark"]) .risk--medium .risk-driver-pill { color: #fdba74; }
-	:global([data-theme="dark"]) .risk--high { background: rgba(220,20,50,0.24); color: #fc3b6e; }
-	:global([data-theme="dark"]) .risk--high .risk-badge { background: rgba(220,20,50,0.44); color: #fd7598; }
-	:global([data-theme="dark"]) .risk--high .risk-driver-pill { color: #fc3b6e; }
+	:global([data-theme="dark"]) .risk--medium { background: rgba(15,118,110,0.14); color: #5eead4; }
+	:global([data-theme="dark"]) .risk--medium .risk-badge { background: rgba(15,118,110,0.30); color: #99f6e4; }
+	:global([data-theme="dark"]) .risk--medium .risk-driver-pill { color: #5eead4; }
+	:global([data-theme="dark"]) .risk--high { background: rgba(22,101,52,0.16); color: #86efac; }
+	:global([data-theme="dark"]) .risk--high .risk-badge { background: rgba(22,101,52,0.32); color: #bbf7d0; }
+	:global([data-theme="dark"]) .risk--high .risk-driver-pill { color: #86efac; }
 
 	/* Sections */
 	.gantt-section,
