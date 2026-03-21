@@ -1,19 +1,23 @@
 <script lang="ts">
 	import { fade, fly } from 'svelte/transition';
 	import type { Category } from '$lib/categories';
-	import { buildCsv, coreWeeks, totalWeeks, getCalendarWeeks, getElapsedBreakdown, getRiskAssessment, getEmptyWarnings, type Unit, toUnit, UNIT_LABELS, UNIT_SHORT } from '$lib/categories';
+	import { buildCsv, coreWeeks, totalWeeks, getCalendarWeeks, getElapsedBreakdown, getRiskAssessment, getEmptyWarnings, type Unit, toUnit, UNITS, UNIT_LABELS, UNIT_SHORT } from '$lib/categories';
 	import GanttChart from './GanttChart.svelte';
 
 	let {
 		categories,
 		unit = 'weeks' as Unit,
 		projectName = 'project',
-		onclose
+		onclose = () => {},
+		onunitchange = (_u: Unit) => {},
+		inline = false
 	}: {
 		categories: Category[];
 		unit?: Unit;
 		projectName?: string;
-		onclose: () => void;
+		onclose?: () => void;
+		onunitchange?: (u: Unit) => void;
+		inline?: boolean;
 	} = $props();
 
 	const core     = $derived(coreWeeks(categories));
@@ -90,23 +94,8 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-<div
-	class="backdrop"
-	onclick={handleBackdrop}
-	role="dialog"
-	aria-modal="true"
-	aria-label="Full project breakdown"
-	tabindex="-1"
-	transition:fade={{ duration: 180 }}
->
-	<div class="modal" transition:fly={{ y: 12, duration: 200 }}>
-		<header class="modal-header">
-			<h2>Project breakdown</h2>
-			<button class="close-btn" onclick={onclose} aria-label="Close breakdown">×</button>
-		</header>
-
-		<div class="modal-body">
+{#snippet bodyContent()}
+		<div class="body-content">
 			{#if emptyWarnings.length > 0}
 				<div class="incomplete-banner">
 					<div class="incomplete-header">
@@ -124,8 +113,8 @@
 			{#if risk}
 				<div class="risk-banner risk--{risk.level}">
 					<div class="risk-header">
-						<span class="risk-badge">{risk.level === 'low' ? 'Accurate' : risk.level === 'medium' ? 'More Complete' : 'Surfaces Substantial Hidden Work'}</span>
-						<span class="risk-headline">{risk.headline}</span>
+						<span class="risk-badge">{risk.level === 'low' ? 'Accurate' : risk.level === 'medium' ? 'Some hidden work surfaced' : 'Surfaces Substantial Hidden Work'}</span>
+						<span class="risk-headline">{risk.level === 'medium' ? 'The surrounding work may have an impact' : risk.level === 'high' ? 'The surrounding work rivals the core — this estimate captures far more than a deliverable-only quote would' : risk.headline}</span>
 						<span class="risk-miss">Non-core work is <strong>~{risk.underestimationPct}%</strong> of total effort</span>
 					</div>
 					<p class="risk-explanation">{risk.explanation}</p>
@@ -312,15 +301,60 @@
 				</section>
 			{/if}
 		</div>
+{/snippet}
 
-		<footer class="modal-footer">
+{#if inline}
+	<div class="breakdown-inline">
+		<header class="inline-header">
+			<h2>{projectName} — Project Breakdown</h2>
+			<select
+				class="unit-select"
+				value={unit}
+				onchange={(e) => onunitchange((e.currentTarget as HTMLSelectElement).value as Unit)}
+				aria-label="Estimate unit"
+			>
+				{#each UNITS as u}
+					<option value={u}>{UNIT_LABELS[u]}</option>
+				{/each}
+			</select>
+		</header>
+		<div class="inline-body">
+			{@render bodyContent()}
+		</div>
+		<footer class="inline-footer">
 			<button class="csv-btn" onclick={downloadCsv} disabled={total === 0}>
 				⬇ Download CSV
 			</button>
-			<button class="close-text-btn" onclick={onclose}>Close</button>
 		</footer>
 	</div>
-</div>
+{:else}
+	<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+	<div
+		class="backdrop"
+		onclick={handleBackdrop}
+		role="dialog"
+		aria-modal="true"
+		aria-label="Full project breakdown"
+		tabindex="-1"
+		transition:fade={{ duration: 180 }}
+	>
+		<div class="modal" transition:fly={{ y: 12, duration: 200 }}>
+			<header class="modal-header">
+				<h2>Project breakdown</h2>
+				<button class="close-btn" onclick={onclose} aria-label="Close breakdown">×</button>
+			</header>
+			<div class="modal-body">
+				{@render bodyContent()}
+			</div>
+			<footer class="modal-footer">
+				<button class="csv-btn" onclick={downloadCsv} disabled={total === 0}>
+					⬇ Download CSV
+				</button>
+				<button class="close-text-btn" onclick={onclose}>Close</button>
+			</footer>
+		</div>
+	</div>
+{/if}
 
 <style>
 	.backdrop {
@@ -871,6 +905,85 @@
 		padding: 0.18rem 0.6rem;
 		border-radius: 999px;
 		opacity: 0.9;
+	}
+
+	/* ── Inline (page) mode ─────────────────────────────── */
+	.breakdown-inline {
+		max-width: 100%;
+		margin: 0;
+		padding: 0;
+		--gutter: clamp(1.5rem, 5vw, 5rem);
+	}
+
+	.inline-header {
+		padding: 1.25rem var(--gutter);
+		border-bottom: 1px solid var(--border);
+		margin-bottom: 0;
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+	}
+
+	.inline-header h2 {
+		flex: 1;
+		min-width: 0;
+	}
+
+	.unit-select {
+		appearance: none;
+		-webkit-appearance: none;
+		background: none;
+		border: 1.5px solid var(--border);
+		border-radius: 999px;
+		padding: 0.25rem 1.8rem 0.25rem 0.85rem;
+		font: inherit;
+		font-size: 0.82rem;
+		font-weight: 500;
+		color: var(--text);
+		cursor: pointer;
+		background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+		background-repeat: no-repeat;
+		background-position: right 0.6rem center;
+		transition: border-color 0.15s;
+		flex-shrink: 0;
+	}
+
+	.unit-select:hover { border-color: var(--text-muted); }
+	.unit-select:focus { outline: 2px solid var(--text); outline-offset: 2px; }
+
+	.inline-body {
+		display: block;
+	}
+
+	.inline-footer {
+		padding: 1.25rem var(--gutter);
+		border-top: 1px solid var(--border);
+		display: flex;
+		gap: 0.75rem;
+	}
+
+	/* Backgrounds bleed full-width; text is inset with --gutter */
+	.breakdown-inline .stats-strip .stat {
+		padding: 1rem 1rem;
+	}
+	.breakdown-inline .stats-strip .stat:first-child {
+		padding-left: var(--gutter);
+	}
+	.breakdown-inline .parallel-note {
+		padding: 0.6rem var(--gutter);
+	}
+	.breakdown-inline .risk-banner {
+		padding: 1rem var(--gutter);
+	}
+	.breakdown-inline .incomplete-banner {
+		padding: 0.9rem var(--gutter);
+	}
+	.breakdown-inline .gantt-section,
+	.breakdown-inline .breakdown-section {
+		padding: 1.75rem var(--gutter) 1.5rem;
+	}
+	.breakdown-inline .items-section {
+		padding: 1.75rem var(--gutter) 2rem;
 	}
 
 	@media print {

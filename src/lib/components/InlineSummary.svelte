@@ -5,10 +5,12 @@
 	let {
 		categories,
 		unit = 'weeks' as Unit,
+		showBreakdown = false,
 		onOpenModal
 	}: {
 		categories: Category[];
 		unit?: Unit;
+		showBreakdown?: boolean;
 		onOpenModal: () => void;
 	} = $props();
 
@@ -74,8 +76,8 @@
 		</div>
 
 		<!-- CTA -->
-		<button class="breakdown-btn" onclick={onOpenModal} disabled={total === 0}>
-			See breakdown →
+		<button class="breakdown-btn" onclick={onOpenModal} disabled={!showBreakdown && total === 0}>
+			{#if showBreakdown}← Back to Builder{:else}See breakdown →{/if}
 		</button>
 	</div>
 </div>

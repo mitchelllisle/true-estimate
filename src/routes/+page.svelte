@@ -10,7 +10,7 @@
 
 	let categories   = $state(initialCategories());
 	let projectName  = $state(generateProjectName());
-	let modalOpen    = $state(false);
+	let showBreakdown = $state(false);
 	let importOpen   = $state(false);
 	let sampleOpen   = $state(false);
 
@@ -108,10 +108,14 @@
 
 <div class="site-header">
 	<div class="site-header-inner">
-		<div class="logo">
+		<button
+			class="logo"
+			onclick={() => (showBreakdown = false)}
+			aria-label="Go to builder"
+		>
 			<span class="logo-pulse" aria-hidden="true">T</span>
 			<span class="logo-text">TrueEstimate</span>
-		</div>
+		</button>
 		<button
 			class="theme-toggle"
 			onclick={() => (darkMode = !darkMode)}
@@ -134,6 +138,7 @@
 	</div>
 </div>
 
+{#if !showBreakdown}
 <div class="page">
 	<header class="hero">
 		<div class="hero-intro">
@@ -161,6 +166,7 @@
 			</span>
 			or <button class="pill-btn" onclick={() => (importOpen = true)}>Upload a CSV</button>.
 		</div>
+		<p class="privacy privacy--hero">🔒 Nothing you enter here is stored, sent, or collected. All data exists only in your browser's memory and disappears when you close or refresh the page.</p>
 		<div class="project-name-row">
 			<label class="project-name-label" for="project-name">Project</label>
 			<input
@@ -305,12 +311,13 @@
 		</p>
 	</footer>
 </div>
-
-<InlineSummary {categories} {unit} onOpenModal={() => (modalOpen = true)} />
-
-{#if modalOpen}
-	<SummaryModal {categories} {unit} {projectName} onclose={() => (modalOpen = false)} />
 {/if}
+
+{#if showBreakdown}
+	<SummaryModal {categories} {unit} {projectName} inline onunitchange={(u) => (unit = u)} />
+{/if}
+
+<InlineSummary {categories} {unit} {showBreakdown} onOpenModal={() => (showBreakdown = !showBreakdown)} />
 
 {#if importOpen}
 	<ImportModal
@@ -347,6 +354,12 @@
 		display: flex;
 		align-items: center;
 		gap: 0.6rem;
+		background: none;
+		border: none;
+		padding: 0;
+		cursor: pointer;
+		color: inherit;
+		font: inherit;
 	}
 
 	.logo-pulse {
@@ -802,6 +815,14 @@
 	.privacy {
 		font-size: 0.75rem;
 		color: var(--text-muted);
+	}
+
+	.privacy--hero {
+		margin-top: 0.6rem;
+		padding: 0.45rem 0.75rem;
+		background: var(--tally-bg);
+		border-radius: var(--radius-sm);
+		line-height: 1.5;
 	}
 
 	.theme-toggle {
