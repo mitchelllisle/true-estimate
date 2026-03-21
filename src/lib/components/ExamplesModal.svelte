@@ -10,14 +10,14 @@
 	}: {
 		category: Category;
 		onclose: () => void;
-		onaddexample: (description: string) => void;
+		onaddexample: (description: string, notes: string) => void;
 	} = $props();
 
 	// Tracks which examples have been added: "tab:label"
 	let added = $state(new Set<string>());
 
 	function addExample(ex: { label: string; note: string }) {
-		onaddexample(ex.label);
+		onaddexample(ex.label, ex.note);
 		added = new Set([...added, `${activeTab}:${ex.label}`]);
 	}
 

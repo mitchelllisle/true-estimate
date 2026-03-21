@@ -1,6 +1,6 @@
 <script lang="ts">
-	import type { Category } from '$lib/categories';
-	import { type Unit, toUnit, UNIT_SHORT } from '$lib/categories';
+	import type { Category, Item } from '$lib/categories';
+	import { type Unit, toUnit, UNIT_SHORT, UNIT_MULTIPLIERS } from '$lib/categories';
 
 	let {
 		categories,
@@ -23,6 +23,7 @@
 		isPreProject: boolean;
 		isFullSpan: boolean;
 		isSpread: boolean;
+		items: Item[];
 	};
 
 	type ChartData = {
@@ -30,11 +31,45 @@
 		ticks: { label: string; pct: number; isZero: boolean }[];
 		projStartPct: number;
 		totalCalWeeks: number;
+		totalCalDisplay: number;
+		unitShort: string;
 	};
 
-	const chart = $derived(buildChart(categories));
+	const chart = $derived(buildChart(categories, unit));
 
-	function buildChart(cats: Category[]): ChartData | null {
+	let expandedBars = $state(new Set<string>());
+
+	// When chart updates, expand any newly-added bars by default
+	$effect(() => {
+		if (!chart) return;
+		const allIds = chart.bars.filter(b => b.items.length > 0).map(b => b.id);
+		expandedBars = new Set(allIds);
+	});
+
+	function toggleBar(id: string) {
+		const next = new Set(expandedBars);
+		if (next.has(id)) {
+			next.delete(id);
+		} else {
+			next.add(id);
+		}
+		expandedBars = next;
+	}
+
+	function expandAll() {
+		if (!chart) return;
+		expandedBars = new Set(chart.bars.filter(b => b.items.length > 0).map(b => b.id));
+	}
+
+	function collapseAll() {
+		expandedBars = new Set();
+	}
+
+	const allExpanded = $derived(
+		!!chart && chart.bars.filter(b => b.items.length > 0).every(b => expandedBars.has(b.id))
+	);
+
+	function buildChart(cats: Category[], unit: Unit): ChartData | null {
 		const eff = (id: string) =>
 			cats.find((c) => c.id === id)?.items.reduce((s, i) => s + (i.weeks ?? 0), 0) ?? 0;
 
@@ -125,6 +160,7 @@
 				isPreProject,
 				isFullSpan,
 				isSpread,
+				items: cat.items,
 			});
 		};
 
@@ -140,12 +176,28 @@
 		push('after',    aftr_s, aftr_e, 'Elapsed ≈ 2× effort', false, false,    true);
 
 		// ── Ruler ticks (project-relative, w=0 is kickoff) ────────────────
-		const step = tMax <= 6 ? 1 : tMax <= 14 ? 2 : 4;
+		// tMax is in weeks; convert to display unit for labelling
+		const mult = UNIT_MULTIPLIERS[unit];
+		const short = UNIT_SHORT[unit];
+		const tMaxDisplay = tMax * mult;
+		// Pick a step in display-unit terms that gives ~6-10 ticks
+		const rawStep = tMaxDisplay <= 6 ? 1
+			: tMaxDisplay <= 14 ? 2
+			: tMaxDisplay <= 30 ? 5
+			: tMaxDisplay <= 60 ? 10
+			: 20;
+		// Convert the step back to weeks for timeline positioning
+		const stepWeeks = rawStep / mult;
 		const ticks: { label: string; pct: number; isZero: boolean }[] = [];
-		for (let wk = 0; wk <= Math.ceil(tMax); wk += step) {
+		for (let wk = 0; wk <= tMax + stepWeeks * 0.01; wk += stepWeeks) {
 			const p = pct(wk);
 			if (p > 101) break;
-			ticks.push({ label: wk === 0 ? 'Start' : `Wk ${wk}`, pct: p, isZero: wk === 0 });
+			const displayVal = Math.round(wk * mult * 10) / 10;
+			ticks.push({
+				label: wk < 0.001 ? 'Start' : `${displayVal}${short}`,
+				pct: p,
+				isZero: wk < 0.001,
+			});
 		}
 
 		return {
@@ -153,18 +205,27 @@
 			ticks,
 			projStartPct:  pct(0),
 			totalCalWeeks: Math.round(tMax * 10) / 10,
+			totalCalDisplay: Math.round(tMax * mult * 10) / 10,
+			unitShort: short,
 		};
 	}
 </script>
 
 {#if chart}
 	<div class="gantt-header">
-		<span class="gantt-cal">~{chart.totalCalWeeks} calendar weeks</span>
-		<span class="gantt-legend">
-			<span class="legend-swatch legend-swatch--solid"></span> Effort (concentrated)
-			&nbsp;&nbsp;
-			<span class="legend-swatch legend-swatch--hatched"></span> Spread across timeline
-		</span>
+		<span class="gantt-cal">~{chart.totalCalDisplay} calendar {chart.unitShort}</span>
+		<div class="gantt-header-right">
+			{#if chart.bars.some(b => b.items.length > 0)}
+				<button class="expand-toggle" onclick={allExpanded ? collapseAll : expandAll}>
+					{allExpanded ? 'Collapse all' : 'Expand all'}
+				</button>
+			{/if}
+			<span class="gantt-legend">
+				<span class="legend-swatch legend-swatch--solid"></span> Effort (concentrated)
+				&nbsp;&nbsp;
+				<span class="legend-swatch legend-swatch--hatched"></span> Spread across timeline
+			</span>
+		</div>
 	</div>
 
 	<div class="gantt-wrap">
@@ -191,7 +252,18 @@
 			{#each chart.bars as bar}
 				<div class="g-row">
 					<div class="g-lbl">
-						<span class="lbl-sub">{bar.subtitle}</span>
+						{#if bar.items.length > 0}
+							<button
+								class="lbl-toggle"
+								onclick={() => toggleBar(bar.id)}
+								aria-expanded={expandedBars.has(bar.id)}
+							>
+								<span class="chevron" class:chevron--open={expandedBars.has(bar.id)}>&#9654;</span>
+								<span class="lbl-sub">{bar.subtitle}</span>
+							</button>
+						{:else}
+							<span class="lbl-sub">{bar.subtitle}</span>
+						{/if}
 						{#if bar.note}<span class="lbl-note">{bar.note}</span>{/if}
 					</div>
 					<div class="g-track">
@@ -212,6 +284,27 @@
 						</div>
 					</div>
 				</div>
+				{#if expandedBars.has(bar.id) && bar.items.length > 0}
+					{#each bar.items as item, i}
+						{@const isLast = i === bar.items.length - 1}
+						<div class="g-row g-row--item">
+							<div class="g-lbl"></div>
+							<div class="g-track g-track--item">
+								<div
+									class="item-tree"
+									class:item-tree--last={isLast}
+									style="left: {bar.startPct}%; border-color: {bar.color};"
+								></div>
+								<div class="item-content" style="margin-left: calc({bar.startPct}% + 14px)">
+									<span class="item-desc">{item.description}</span>
+									{#if item.weeks != null}
+										<span class="item-effort">{toUnit(item.weeks, unit)}{UNIT_SHORT[unit]}</span>
+									{/if}
+								</div>
+							</div>
+						</div>
+					{/each}
+				{/if}
 			{/each}
 
 		</div>
@@ -228,6 +321,28 @@
 		margin-bottom: 0.65rem;
 		flex-wrap: wrap;
 		gap: 0.25rem;
+	}
+
+	.gantt-header-right {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		flex-wrap: wrap;
+	}
+
+	.expand-toggle {
+		font-size: 0.66rem;
+		color: var(--text-muted);
+		background: none;
+		border: none;
+		padding: 0;
+		cursor: pointer;
+		text-decoration: underline;
+		text-underline-offset: 2px;
+	}
+
+	.expand-toggle:hover {
+		color: var(--text);
 	}
 
 	.gantt-cal {
@@ -448,5 +563,102 @@
 		color: var(--text-muted);
 		text-align: center;
 		padding: 0.75rem 0;
+	}
+
+	/* ── Toggle labels ───────────────────────────────── */
+	.lbl-toggle {
+		background: none;
+		border: none;
+		padding: 0;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: flex-end;
+		gap: 3px;
+		font: inherit;
+		color: inherit;
+		width: 100%;
+		text-align: right;
+	}
+
+	.lbl-toggle:hover .lbl-sub {
+		text-decoration: underline;
+		text-underline-offset: 2px;
+	}
+
+	.chevron {
+		display: inline-block;
+		font-size: 0.45rem;
+		color: var(--text-muted);
+		transition: transform 0.15s ease;
+		line-height: 1;
+		margin-bottom: 1px;
+	}
+
+	.chevron--open {
+		transform: rotate(90deg);
+	}
+
+	/* ── Item rows ───────────────────────────────────── */
+	.g-row--item {
+		align-items: stretch;
+	}
+
+	.g-track--item {
+		position: relative;
+		min-height: 24px;
+		display: flex;
+		align-items: center;
+		padding: 2px 4px;
+	}
+
+	/* Vertical + horizontal tree connector */
+	.item-tree {
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		width: 0;
+		border-left: 1px solid;
+		opacity: 0.45;
+	}
+
+	.item-tree--last {
+		bottom: 50%;
+	}
+
+	.item-tree::after {
+		content: '';
+		position: absolute;
+		left: 0;
+		top: 50%;
+		width: 10px;
+		height: 0;
+		border-top: 1px solid;
+		border-color: inherit;
+	}
+
+	.item-content {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		width: 100%;
+		padding: 1px 0;
+		border-bottom: 1px solid var(--border);
+		font-size: 0.71rem;
+	}
+
+	.item-desc {
+		flex: 1;
+		color: var(--text);
+		line-height: 1.3;
+	}
+
+	.item-effort {
+		font-size: 0.65rem;
+		font-weight: 700;
+		color: var(--text-muted);
+		white-space: nowrap;
+		min-width: 28px;
+		text-align: right;
 	}
 </style>

@@ -1,6 +1,7 @@
 export type Item = {
 	id: string;
 	description: string;
+	notes: string;
 	weeks: number | null;
 };
 
@@ -348,7 +349,7 @@ export function sampleCategories(type: SampleProject = 'backend'): Category[] {
 
 function sampleBackendProject(): Category[] {
 	const cats = initialCategories();
-	const add = (id: string, items: { description: string; weeks: number | null }[]) => {
+	const add = (id: string, items: { description: string; notes: string; weeks: number | null }[]) => {
 		const cat = cats.find((c) => c.id === id)!;
 		cat.items = items.map((i) => ({ ...i, id: crypto.randomUUID() }));
 	};
@@ -356,30 +357,30 @@ function sampleBackendProject(): Category[] {
 	// Internal product build — lean overhead, large focused core
 	// Risk profile: ~low probability (~32% overhead)
 	add('around', [
-		{ description: 'Weekly standups & sprint planning', weeks: 0.5 },
+		{ description: 'Weekly standups & sprint planning', notes: 'Regular team checkpoints to align on progress, blockers and upcoming work.', weeks: 0.5 },
 	]);
 	add('before', [
-		{ description: 'Dev environment & repo setup', weeks: 0.5 },
-		{ description: 'CI/CD pipeline & infrastructure', weeks: 0.5 },
+		{ description: 'Dev environment & repo setup', notes: 'Configure local environments, repo structure, linting and dependency management.', weeks: 0.5 },
+		{ description: 'CI/CD pipeline & infrastructure', notes: 'Automated build, test and deployment pipeline plus cloud infrastructure provisioning.', weeks: 0.5 },
 	]);
 	add('the-work', [
-		{ description: 'Authentication & user accounts', weeks: 1.5 },
-		{ description: 'Dashboard & data visualisation', weeks: 2 },
-		{ description: 'Core API endpoints & business logic', weeks: 2 },
-		{ description: 'Email notifications & async jobs', weeks: 0.5 },
-		{ description: 'Unit & integration tests', weeks: 1 },
+		{ description: 'Authentication & user accounts', notes: 'Login, signup, password reset, session management and role-based access control.', weeks: 1.5 },
+		{ description: 'Dashboard & data visualisation', notes: 'Charts, tables and summary views pulling from the core API.', weeks: 2 },
+		{ description: 'Core API endpoints & business logic', notes: 'RESTful or GraphQL endpoints for the application\'s primary data and business workflows.', weeks: 2 },
+		{ description: 'Email notifications & async jobs', notes: 'Transactional emails, background task queue and scheduled job processing.', weeks: 0.5 },
+		{ description: 'Unit & integration tests', notes: 'Test coverage for business logic, API contracts and critical user flows.', weeks: 1 },
 	]);
 	add('between', [
-		{ description: 'Bug fixes from internal review rounds', weeks: 0.5 },
+		{ description: 'Bug fixes from internal review rounds', notes: 'Issues surfaced by the team during QA and internal testing cycles.', weeks: 0.5 },
 	]);
 	add('beyond', [
-		{ description: 'Feature additions from stakeholder review', weeks: 0.5 },
+		{ description: 'Feature additions from stakeholder review', notes: 'Extra functionality requested after seeing the first working version.', weeks: 0.5 },
 	]);
 	add('outside', [
-		{ description: 'Contingency buffer', weeks: 0.5 },
+		{ description: 'Contingency buffer', notes: 'Unplanned time absorbed by unexpected complexity or external dependencies.', weeks: 0.5 },
 	]);
 	add('after', [
-		{ description: 'Bug monitoring & patch releases', weeks: 0.25 },
+		{ description: 'Bug monitoring & patch releases', notes: 'Post-launch issue tracking, hotfixes and minor releases.', weeks: 0.25 },
 	]);
 
 	return cats;
@@ -387,49 +388,49 @@ function sampleBackendProject(): Category[] {
 
 function sampleFrontendProject(): Category[] {
 	const cats = initialCategories();
-	const add = (id: string, items: { description: string; weeks: number | null }[]) => {
+	const add = (id: string, items: { description: string; notes: string; weeks: number | null }[]) => {
 		const cat = cats.find((c) => c.id === id)!;
 		cat.items = items.map((i) => ({ ...i, id: crypto.randomUUID() }));
 	};
 
 	add('around', [
-		{ description: 'Weekly standups & design reviews', weeks: 0.5 },
-		{ description: 'Sprint planning & retrospectives', weeks: 0.5 },
-		{ description: 'Stakeholder demos & feedback sessions', weeks: 0.25 }
+		{ description: 'Weekly standups & design reviews', notes: 'Team syncs and collaborative reviews of design progress with stakeholders.', weeks: 0.5 },
+		{ description: 'Sprint planning & retrospectives', notes: 'Planning upcoming sprints and reflecting on what went well or needs improving.', weeks: 0.5 },
+		{ description: 'Stakeholder demos & feedback sessions', notes: 'Showing progress to clients or product owners and gathering structured feedback.', weeks: 0.25 }
 	]);
 	add('to-get', [
-		{ description: 'Discovery call & UX requirements', weeks: 0.5 },
-		{ description: 'Proposal, estimate & contract', weeks: 0.5 }
+		{ description: 'Discovery call & UX requirements', notes: 'Initial meeting to understand goals, users, constraints and core flows.', weeks: 0.5 },
+		{ description: 'Proposal, estimate & contract', notes: 'Scoping document, time/cost breakdown and formal project agreement.', weeks: 0.5 }
 	]);
 	add('before', [
-		{ description: 'Design system & component library setup', weeks: 1 },
-		{ description: 'Figma handoff & token extraction', weeks: 0.5 },
-		{ description: 'Build tooling & CI pipeline', weeks: 0.5 }
+		{ description: 'Design system & component library setup', notes: 'Shared tokens, base components and style foundations to build from.', weeks: 1 },
+		{ description: 'Figma handoff & token extraction', notes: 'Converting design files into developer-ready specs, colours, spacing and type styles.', weeks: 0.5 },
+		{ description: 'Build tooling & CI pipeline', notes: 'Vite/webpack config, linting, testing setup and automated deployment.', weeks: 0.5 }
 	]);
 	add('the-work', [
-		{ description: 'Marketing / landing page', weeks: 1 },
-		{ description: 'Product listing & search pages', weeks: 1.5 },
-		{ description: 'Checkout & payment flow', weeks: 1.5 },
-		{ description: 'Authentication & account pages', weeks: 1 },
-		{ description: 'Responsive polish & accessibility audit', weeks: 1 },
-		{ description: 'Animation & micro-interactions', weeks: 0.5 }
+		{ description: 'Marketing / landing page', notes: 'Conversion-focused page with hero, features and CTAs.', weeks: 1 },
+		{ description: 'Product listing & search pages', notes: 'Filterable grid/list views with search, sorting and pagination.', weeks: 1.5 },
+		{ description: 'Checkout & payment flow', notes: 'Multi-step checkout, cart management, Stripe or similar integration.', weeks: 1.5 },
+		{ description: 'Authentication & account pages', notes: 'Sign-in, sign-up, forgot password and account management screens.', weeks: 1 },
+		{ description: 'Responsive polish & accessibility audit', notes: 'Mobile-first layout fixes, WCAG compliance checks and keyboard navigation.', weeks: 1 },
+		{ description: 'Animation & micro-interactions', notes: 'Transition polish, hover states and loading feedback for key interactions.', weeks: 0.5 }
 	]);
 	add('between', [
-		{ description: 'Cross-browser & device testing', weeks: 0.5 },
-		{ description: 'Design feedback iterations', weeks: 0.5 },
-		{ description: 'Performance & Lighthouse optimisation', weeks: 0.5 }
+		{ description: 'Cross-browser & device testing', notes: 'Manual and automated QA across Chrome, Safari, Firefox and key screen sizes.', weeks: 0.5 },
+		{ description: 'Design feedback iterations', notes: 'Revisions driven by designer or stakeholder review after seeing it in the browser.', weeks: 0.5 },
+		{ description: 'Performance & Lighthouse optimisation', notes: 'Image optimisation, code splitting and Core Web Vitals improvements.', weeks: 0.5 }
 	]);
 	add('beyond', [
-		{ description: 'Additional pages from stakeholder feedback', weeks: 1 },
-		{ description: 'Copy & asset updates after content review', weeks: 0.5 }
+		{ description: 'Additional pages from stakeholder feedback', notes: 'Pages not in the original spec, requested after seeing the initial build.', weeks: 1 },
+		{ description: 'Copy & asset updates after content review', notes: 'Late-stage text changes, image swaps and final brand polish.', weeks: 0.5 }
 	]);
 	add('outside', [
-		{ description: 'API contract changes from backend team', weeks: 0.5 },
-		{ description: 'Contingency buffer', weeks: 0.5 }
+		{ description: 'API contract changes from backend team', notes: 'Refactoring required when backend endpoints change after frontend work has started.', weeks: 0.5 },
+		{ description: 'Contingency buffer', notes: 'Unplanned time absorbed by unexpected complexity or external dependencies.', weeks: 0.5 }
 	]);
 	add('after', [
-		{ description: 'Dependency & framework upgrades', weeks: 0.25 },
-		{ description: 'Bug triage & patch releases', weeks: 0.25 }
+		{ description: 'Dependency & framework upgrades', notes: 'Keeping the codebase current with security patches and major version updates.', weeks: 0.25 },
+		{ description: 'Bug triage & patch releases', notes: 'Post-launch issue tracking, hotfixes and minor releases.', weeks: 0.25 }
 	]);
 
 	return cats;
@@ -437,7 +438,7 @@ function sampleFrontendProject(): Category[] {
 
 function sampleDataProject(): Category[] {
 	const cats = initialCategories();
-	const add = (id: string, items: { description: string; weeks: number | null }[]) => {
+	const add = (id: string, items: { description: string; notes: string; weeks: number | null }[]) => {
 		const cat = cats.find((c) => c.id === id)!;
 		cat.items = items.map((i) => ({ ...i, id: crypto.randomUUID() }));
 	};
@@ -445,44 +446,44 @@ function sampleDataProject(): Category[] {
 	// Complex data platform — heavy stakeholder overhead, lots of scope creep
 	// Risk profile: ~high probability (~66% overhead)
 	add('around', [
-		{ description: 'Weekly stakeholder syncs & data demos', weeks: 0.75 },
-		{ description: 'Sprint planning & retrospectives', weeks: 0.25 },
-		{ description: 'Executive reporting & presentations', weeks: 0.5 },
-		{ description: 'Data governance & sign-off meetings', weeks: 0.5 },
+		{ description: 'Weekly stakeholder syncs & data demos', notes: 'Regular showcases of pipeline outputs and dashboard progress for sign-off.', weeks: 0.75 },
+		{ description: 'Sprint planning & retrospectives', notes: 'Planning work cycles and reviewing team performance and blockers.', weeks: 0.25 },
+		{ description: 'Executive reporting & presentations', notes: 'Preparing status decks and business-level summaries for leadership.', weeks: 0.5 },
+		{ description: 'Data governance & sign-off meetings', notes: 'Formal review of data definitions, access policies and compliance requirements.', weeks: 0.5 },
 	]);
 	add('to-get', [
-		{ description: 'Data audit & requirements scoping', weeks: 1 },
-		{ description: 'Proposal, estimate & contract', weeks: 0.5 },
+		{ description: 'Data audit & requirements scoping', notes: 'Inventory of available data sources, quality assessment and metrics requirements.', weeks: 1 },
+		{ description: 'Proposal, estimate & contract', notes: 'Scoping document, time/cost breakdown and formal project agreement.', weeks: 0.5 },
 	]);
 	add('before', [
-		{ description: 'Data warehouse & environment setup', weeks: 1 },
-		{ description: 'Pipeline scaffolding & orchestration config', weeks: 0.5 },
-		{ description: 'Access, credentials & source connections', weeks: 0.5 },
+		{ description: 'Data warehouse & environment setup', notes: 'Provisioning Snowflake/BigQuery/Redshift, environment configs and access controls.', weeks: 1 },
+		{ description: 'Pipeline scaffolding & orchestration config', notes: 'Airflow/Prefect DAG structure, secrets management and scheduling config.', weeks: 0.5 },
+		{ description: 'Access, credentials & source connections', notes: 'Obtaining and testing access to all upstream data systems and APIs.', weeks: 0.5 },
 	]);
 	add('the-work', [
-		{ description: 'Ingestion & ETL pipelines', weeks: 2 },
-		{ description: 'Data modelling & transformation layer', weeks: 1.5 },
-		{ description: 'KPI definitions & metrics catalogue', weeks: 0.5 },
-		{ description: 'Dashboard & reporting build', weeks: 1.5 },
-		{ description: 'Data quality checks & alerting', weeks: 0.5 },
+		{ description: 'Ingestion & ETL pipelines', notes: 'Extracting data from source systems, transforming and loading to the warehouse.', weeks: 2 },
+		{ description: 'Data modelling & transformation layer', notes: 'dbt models or equivalent: staging, intermediate and mart layers for clean, reliable data.', weeks: 1.5 },
+		{ description: 'KPI definitions & metrics catalogue', notes: 'Agreeing on business metric definitions and documenting them in a shared catalogue.', weeks: 0.5 },
+		{ description: 'Dashboard & reporting build', notes: 'Building Looker/Metabase/Tableau reports from the clean data layer.', weeks: 1.5 },
+		{ description: 'Data quality checks & alerting', notes: 'Automated tests on key datasets with alerting for anomalies or failures.', weeks: 0.5 },
 	]);
 	add('between', [
-		{ description: 'Data validation & reconciliation', weeks: 0.5 },
-		{ description: 'Model tuning from stakeholder review', weeks: 0.5 },
-		{ description: 'Query & pipeline performance optimisation', weeks: 0.5 },
+		{ description: 'Data validation & reconciliation', notes: 'Cross-checking pipeline outputs against source systems and business expectations.', weeks: 0.5 },
+		{ description: 'Model tuning from stakeholder review', notes: 'Revising metric logic and dimension structures after stakeholder review sessions.', weeks: 0.5 },
+		{ description: 'Query & pipeline performance optimisation', notes: 'Reducing warehouse costs and query times through partitioning, clustering and query rewrites.', weeks: 0.5 },
 	]);
 	add('beyond', [
-		{ description: 'Additional metrics & dimensions requested mid-project', weeks: 1.5 },
-		{ description: 'New data source integrations added to scope', weeks: 0.5 },
-		{ description: 'Dashboard redesign after stakeholder review', weeks: 0.5 },
+		{ description: 'Additional metrics & dimensions requested mid-project', notes: 'New measures and breakdowns added to scope after stakeholders see the initial dashboard.', weeks: 1.5 },
+		{ description: 'New data source integrations added to scope', notes: 'Connecting additional systems not included in the original spec.', weeks: 0.5 },
+		{ description: 'Dashboard redesign after stakeholder review', notes: 'Visual and structural changes to dashboards after business users test them.', weeks: 0.5 },
 	]);
 	add('outside', [
-		{ description: 'Upstream schema or API changes from source systems', weeks: 1 },
-		{ description: 'Data quality issues in source data', weeks: 0.5 },
+		{ description: 'Upstream schema or API changes from source systems', notes: 'Unexpected breaking changes in source data that require pipeline refactoring.', weeks: 1 },
+		{ description: 'Data quality issues in source data', notes: 'Time spent investigating and working around dirty, inconsistent or missing data.', weeks: 0.5 },
 	]);
 	add('after', [
-		{ description: 'Pipeline monitoring & incident response', weeks: 0.5 },
-		{ description: 'Schema migration & dependency upgrades', weeks: 0.25 },
+		{ description: 'Pipeline monitoring & incident response', notes: 'Ongoing health monitoring, alerting and fixing production pipeline failures.', weeks: 0.5 },
+		{ description: 'Schema migration & dependency upgrades', notes: 'Handling upstream schema changes and keeping dbt/orchestration dependencies current.', weeks: 0.25 },
 	]);
 
 	return cats;
@@ -635,12 +636,12 @@ export function getRiskAssessment(categories: Category[]): RiskAssessment | null
 			+ `A core-only quote would likely have been close — though it's still worth having the full picture visible.`;
 	} else if (underestimationPct < 60) {
 		level = 'medium';
-		headline = 'Worth noting — there\'s work here a core-only quote would probably have missed';
+		headline = 'Some hidden work surfaced — a core-only quote would probably have missed this';
 		explanation = `Accounting for the non-core effort makes this estimate roughly ${underestimationPct}% more complete than a deliverable-only quote. `
 			+ `The hidden work (${topNames}) represents real time that can easily go unquoted without this kind of breakdown.`;
 	} else {
 		level = 'high';
-		headline = 'Significant gap — the surrounding work looks to be as large as the core itself';
+		headline = 'The surrounding work rivals the core — this estimate captures far more than a deliverable-only quote would';
 		explanation = `A core-only quote would likely have covered only around ${100 - underestimationPct}% of the actual effort. `
 			+ `This estimate appears ${underestimationPct}% more complete because it includes ${topNames} — `
 			+ `work that tends to get missed when quoting only the deliverable.`;
@@ -664,12 +665,13 @@ export function fromUnit(enteredValue: number, unit: Unit): number {
 }
 
 export function buildCsv(categories: Category[]): string {
-	const rows: string[] = ['Category,Subtitle,Item,Weeks'];
+	const rows: string[] = ['Category,Subtitle,Item,Notes,Weeks'];
 	for (const cat of categories) {
 		for (const item of cat.items) {
 			const weeks = item.weeks != null ? String(item.weeks) : '';
-			const desc = `"${item.description.replace(/"/g, '""')}"`;
-			rows.push(`"${cat.name}",${cat.subtitle},${desc},${weeks}`);
+			const desc  = `"${item.description.replace(/"/g, '""')}"`;
+			const notes = `"${(item.notes ?? '').replace(/"/g, '""')}"`;
+			rows.push(`"${cat.name}",${cat.subtitle},${desc},${notes},${weeks}`);
 		}
 	}
 	return rows.join('\n');
@@ -715,6 +717,7 @@ export function parseCsvImport(csv: string, base: Category[]): ImportResult {
 	const colCategory = header.indexOf('category');
 	const colSubtitle = header.indexOf('subtitle');
 	const colItem     = header.indexOf('item');
+	const colNotes    = header.indexOf('notes');
 	const colWeeks    = header.indexOf('weeks');
 
 	const errors: ImportError[] = [];
@@ -737,6 +740,7 @@ export function parseCsvImport(csv: string, base: Category[]): ImportResult {
 		const subtitle = (colSubtitle !== -1 ? cols[colSubtitle] : '')?.trim() ?? '';
 		const category = (colCategory !== -1 ? cols[colCategory] : '')?.trim() ?? '';
 		const item     = cols[colItem]?.trim() ?? '';
+		const notesVal = (colNotes !== -1 ? cols[colNotes] : '')?.trim() ?? '';
 		const weeksRaw = (colWeeks !== -1 ? cols[colWeeks] : '')?.trim() ?? '';
 
 		// Skip blank rows silently
@@ -758,6 +762,7 @@ export function parseCsvImport(csv: string, base: Category[]): ImportResult {
 		cat.items.push({
 			id:          crypto.randomUUID(),
 			description: item,
+			notes:       notesVal,
 			weeks:       (weeks != null && !isNaN(weeks)) ? weeks : null,
 		});
 		imported++;

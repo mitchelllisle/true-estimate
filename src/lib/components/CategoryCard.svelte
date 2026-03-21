@@ -8,13 +8,15 @@
 	let {
 		category,
 		unit = 'weeks' as Unit,
+		notesExpanded = null as { open: boolean; tick: number } | null,
 		onadditem,
 		onupdateitem,
 		onremoveitem
 	}: {
 		category: Category;
 		unit?: Unit;
-		onadditem: (categoryId: string, description?: string) => void;
+		notesExpanded?: { open: boolean; tick: number } | null;
+		onadditem: (categoryId: string, description?: string, notes?: string) => void;
 		onupdateitem: (categoryId: string, itemId: string, patch: Partial<Item>) => void;
 		onremoveitem: (categoryId: string, itemId: string) => void;
 	} = $props();
@@ -34,7 +36,7 @@
 	<ExamplesModal
 		{category}
 		onclose={() => (examplesOpen = false)}
-		onaddexample={(desc) => onadditem(category.id, desc)}
+		onaddexample={(desc, notes) => onadditem(category.id, desc, notes)}
 	/>
 {/if}
 
@@ -66,6 +68,7 @@
 					<ItemRow
 						{item}
 						{unit}
+						{notesExpanded}
 						onupdate={(id, patch) => onupdateitem(category.id, id, patch)}
 						onremove={(id) => onremoveitem(category.id, id)}
 					/>
@@ -180,6 +183,7 @@
 	.items {
 		display: flex;
 		flex-direction: column;
+		gap: 0.5rem;
 	}
 
 	.add-btn {

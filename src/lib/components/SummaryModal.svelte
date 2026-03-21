@@ -124,7 +124,7 @@
 			{#if risk}
 				<div class="risk-banner risk--{risk.level}">
 					<div class="risk-header">
-						<span class="risk-badge">{risk.level === 'low' ? 'Accurate' : risk.level === 'medium' ? 'More Complete' : 'Much More Complete'}</span>
+						<span class="risk-badge">{risk.level === 'low' ? 'Accurate' : risk.level === 'medium' ? 'More Complete' : 'Surfaces Substantial Hidden Work'}</span>
 						<span class="risk-headline">{risk.headline}</span>
 						<span class="risk-miss">Non-core work is <strong>~{risk.underestimationPct}%</strong> of total effort</span>
 					</div>
@@ -294,10 +294,15 @@
 								<ul>
 									{#each cat.items as item}
 										<li>
-											<span class="item-desc">{item.description || '(no description)'}</span>
-											<span class="item-weeks">
-												{item.weeks != null ? toUnit(item.weeks, unit) + uShort : 'no estimate'}
-											</span>
+											<div class="item-header">
+												<span class="item-desc">{item.description || '(no description)'}</span>
+												<span class="item-weeks">
+													{item.weeks != null ? toUnit(item.weeks, unit) + uShort : 'no estimate'}
+												</span>
+											</div>
+											{#if item.notes}
+												<span class="item-notes">{item.notes}</span>
+											{/if}
 										</li>
 									{/each}
 								</ul>
@@ -753,16 +758,26 @@
 
 	.cat-group li {
 		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		gap: 1rem;
+		flex-direction: column;
+		gap: 0.15rem;
 		padding: 0.4rem 0.75rem;
 		font-size: 0.84rem;
 		border-bottom: 1px solid var(--border);
 	}
 	.cat-group li:last-child { border-bottom: none; }
 
+	.item-header {
+		display: flex;
+		align-items: baseline;
+		gap: 1rem;
+	}
+
 	.item-desc { flex: 1; min-width: 0; }
+	.item-notes {
+		font-size: 0.75rem;
+		color: var(--text-muted);
+		line-height: 1.4;
+	}
 	.item-weeks {
 		flex-shrink: 0;
 		font-variant-numeric: tabular-nums;
