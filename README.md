@@ -4,7 +4,7 @@
 
 A project estimation tool that helps you see the full cost of a project — not just the core execution work, but everything around it: acquisition, preparation, iteration, admin, surprises, and maintenance.
 
-Built by [Mitchell Lisle](https://github.com/mitchelllisle) based on the framework described in ["The work is never just 'the work'"](https://davestewart.co.uk/blog/work/project-estimation/) by [Dave Stewart](https://davestewart.co.uk/).
+Based on the framework described in ["The work is never just 'the work'"](https://davestewart.co.uk/blog/work/project-estimation/) by [Dave Stewart](https://davestewart.co.uk/).
 
 ---
 
