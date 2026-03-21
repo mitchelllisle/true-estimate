@@ -62,10 +62,8 @@
 		const acq_s = acq > 0 ? -(acq * 1.5) : 0;
 		const acq_e = 0;
 
-		// ── Admin: spans full project (0 → project end) ───────────────────
 		const projectEnd = Math.max(aftr_e, core_e);
 		const admn_s = 0;
-		const admn_e = projectEnd;
 
 		// ── Iteration: starts 40% into core, extends 1.5w past effort ─────
 		// People are still iterating while finishing up, and for a short
@@ -83,6 +81,11 @@
 		// ── Surprises: spread across most of the project ──────────────────
 		const prbs_s = prep > 0 ? prep_e * 0.3 : core_s;
 		const prbs_e = prbs > 0 ? Math.max(projectEnd * 0.88, core_e + 0.5) : prbs_s;
+
+		// ── Admin: spans full project life (computed last so it reaches tMax) ─
+		// Admin runs throughout — including any iteration/change tails that extend
+		// past the core execution end date.
+		const admn_e = admn > 0 ? Math.max(projectEnd, iter_e, chng_e, prbs_e) : 0;
 
 		// ── Timeline bounds ────────────────────────────────────────────────
 		const tMin = acq > 0 ? acq_s : 0;

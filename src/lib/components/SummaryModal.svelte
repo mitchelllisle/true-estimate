@@ -1,16 +1,18 @@
 <script lang="ts">
 	import { fade, fly } from 'svelte/transition';
 	import type { Category } from '$lib/categories';
-	import { buildCsv, coreWeeks, totalWeeks, getCalendarWeeks, getElapsedBreakdown, type Unit, toUnit, UNIT_LABELS, UNIT_SHORT } from '$lib/categories';
+	import { buildCsv, coreWeeks, totalWeeks, getCalendarWeeks, getElapsedBreakdown, getRiskAssessment, type Unit, toUnit, UNIT_LABELS, UNIT_SHORT } from '$lib/categories';
 	import GanttChart from './GanttChart.svelte';
 
 	let {
 		categories,
 		unit = 'weeks' as Unit,
+		projectName = 'project',
 		onclose
 	}: {
 		categories: Category[];
 		unit?: Unit;
+		projectName?: string;
 		onclose: () => void;
 	} = $props();
 
@@ -21,11 +23,29 @@
 	const pctCore  = $derived(total > 0 ? Math.round((core / total) * 100) : 0);
 	const overhead = $derived(core > 0 && total > core ? Math.round(((total - core) / core) * 100) : 0);
 
-	const uCore   = $derived(toUnit(core, unit));
-	const uTotal  = $derived(toUnit(total, unit));
-	const uCal    = $derived(calWeeks != null ? toUnit(calWeeks, unit) : null);
+	const uCore      = $derived(toUnit(core, unit));
+	const uTotal     = $derived(toUnit(total, unit));
+	const uNonCore   = $derived(toUnit(total - core, unit));
+	const uCal       = $derived(calWeeks != null ? toUnit(calWeeks, unit) : null);
 	const uShort  = $derived(UNIT_SHORT[unit]);
 	const uLabel  = $derived(UNIT_LABELS[unit].toLowerCase());
+
+	const parallelWeeks  = $derived(calWeeks != null && total > calWeeks ? Math.round((total - calWeeks) * 10) / 10 : 0);
+	const uParallel      = $derived(toUnit(parallelWeeks, unit));
+	const concurrentDesc = $derived(buildConcurrentDesc(elapsed));
+	const risk           = $derived(getRiskAssessment(categories));
+
+	function buildConcurrentDesc(el: typeof elapsed): string {
+		const parts: string[] = [];
+		if (el.some(e => e.id === 'around')) parts.push('admin runs throughout the project');
+		const hasIter = el.some(e => e.id === 'between');
+		const hasChng = el.some(e => e.id === 'beyond');
+		if (hasIter && hasChng) parts.push('iteration and changes overlap with execution');
+		else if (hasIter) parts.push('iteration overlaps with execution');
+		else if (hasChng) parts.push('scope changes overlap with execution');
+		if (el.some(e => e.id === 'to-get')) parts.push('acquisition happens pre-project');
+		return parts.length > 0 ? parts.join('; ') : 'activities run concurrently';
+	}
 
 	const catRows = $derived(
 		categories
@@ -51,7 +71,9 @@
 		const url = URL.createObjectURL(blob);
 		const a = document.createElement('a');
 		a.href = url;
-		a.download = 'project-estimation.csv';
+		const date = new Date().toISOString().slice(0, 10);
+		const safeName = projectName.trim().replace(/[^a-zA-Z0-9_-]/g, '-') || 'project';
+		a.download = `${safeName}-${date}.csv`;
 		a.click();
 		URL.revokeObjectURL(url);
 	}
@@ -84,31 +106,72 @@
 		</header>
 
 		<div class="modal-body">
+			{#if risk}
+				<div class="risk-banner risk--{risk.level}">
+					<div class="risk-header">
+						<span class="risk-badge">{risk.level.charAt(0).toUpperCase() + risk.level.slice(1)} Probability</span>
+						<span class="risk-headline">{risk.headline}</span>
+						<span class="risk-miss">Core-only quote misses <strong>~{risk.underestimationPct}%</strong> of total effort</span>
+					</div>
+					<p class="risk-explanation">{risk.explanation}</p>
+					{#if risk.drivers.length > 0}
+						<div class="risk-drivers">
+							<span class="risk-drivers-label">Top drivers:</span>
+							{#each risk.drivers as d}
+								<span class="risk-driver-pill">{d.subtitle} <span class="driver-pct">{d.pct}%</span></span>
+							{/each}
+						</div>
+					{/if}
+				</div>
+			{/if}
+
 			<!-- Stats strip -->
 			{#if total > 0}
 				<div class="stats-strip">
 					<div class="stat">
 						<span class="stat-value">{uTotal}{uShort}</span>
-						<span class="stat-label">total effort</span>
+						<span class="stat-label">
+							total effort
+							<span class="stat-info" data-tip="The sum of person-time across every category — what you'd write on a timesheet if one person did all the work sequentially.">ⓘ</span>
+						</span>
 					</div>
 					{#if uCal != null}
 						<div class="stat stat--cal">
 							<span class="stat-value">~{uCal}{uShort}</span>
-							<span class="stat-label">calendar time</span>
+							<span class="stat-label">
+								calendar time
+								<span class="stat-info" data-tip="Wall-clock duration from project start to finish. Less than total effort because several activities run concurrently on the calendar.">ⓘ</span>
+							</span>
 						</div>
 					{/if}
 					{#if pctCore > 0}
 						<div class="stat">
 							<span class="stat-value">{pctCore}%</span>
-							<span class="stat-label">core execution</span>
+							<span class="stat-label">
+								core execution
+								<span class="stat-info" data-tip="The portion of total effort spent on the actual deliverable — the work you'd normally put in a statement of work. Everything else is overhead.">ⓘ</span>
+							</span>
 						</div>
 					{/if}
 					{#if overhead > 0}
 						<div class="stat">
 							<span class="stat-value">+{overhead}%</span>
-							<span class="stat-label">overhead beyond core</span>
+							<span class="stat-label">
+								overhead beyond core
+								<span class="stat-info" data-tip="How much extra work surrounds the core deliverable, expressed as a % of core effort. +100% means the surrounding work doubles the total.">ⓘ</span>
+							</span>
+							<span class="stat-calc">{uNonCore}{uShort} non-core &div; {uCore}{uShort} core &times; 100</span>
 						</div>
 					{/if}
+				</div>
+			{/if}
+
+			{#if parallelWeeks > 0}
+				<div class="parallel-note">
+					<strong>{uParallel}{uShort} of work runs in parallel</strong> —
+					{concurrentDesc}.
+					<em>Effort</em> is the sum of person-time across all activities;
+					<em>calendar time</em> is the wall-clock duration from start to finish.
 				</div>
 			{/if}
 
@@ -301,6 +364,24 @@
 		flex-shrink: 0;
 	}
 
+	.parallel-note {
+		padding: 0.6rem 2rem;
+		background: var(--bg);
+		border-bottom: 1px solid var(--border);
+		font-size: 0.82rem;
+		color: var(--text-muted);
+		line-height: 1.55;
+		flex-shrink: 0;
+	}
+	.parallel-note strong {
+		color: var(--text);
+	}
+	.parallel-note em {
+		font-style: normal;
+		font-weight: 600;
+		color: var(--text);
+	}
+
 	.stat {
 		display: flex;
 		flex-direction: column;
@@ -326,7 +407,165 @@
 		text-transform: uppercase;
 		letter-spacing: 0.06em;
 		color: var(--text-muted);
+		display: flex;
+		align-items: center;
+		gap: 0.3rem;
 	}
+
+	.stat-info {
+		position: relative;
+		cursor: default;
+		font-size: 0.7rem;
+		color: var(--text-muted);
+		opacity: 0.6;
+		line-height: 1;
+		transition: opacity 0.15s;
+		text-transform: none;
+		letter-spacing: 0;
+		font-weight: 400;
+		flex-shrink: 0;
+	}
+	.stat-info:hover { opacity: 1; }
+
+	.stat-info::after {
+		content: attr(data-tip);
+		position: absolute;
+		top: calc(100% + 6px);
+		left: 50%;
+		transform: translateX(-50%);
+		width: 220px;
+		background: var(--text);
+		color: var(--bg);
+		font-size: 0.73rem;
+		font-weight: 400;
+		line-height: 1.45;
+		padding: 0.45rem 0.65rem;
+		border-radius: 6px;
+		pointer-events: none;
+		opacity: 0;
+		transition: opacity 0.15s;
+		z-index: 10;
+		white-space: normal;
+		text-align: left;
+		box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+	}
+	.stat-info:hover::after { opacity: 1; }
+
+	.stat-calc {
+		font-size: 0.68rem;
+		color: var(--text-muted);
+		opacity: 0.7;
+		font-variant-numeric: tabular-nums;
+	}
+
+	/* Risk banner */
+	.risk-banner {
+		padding: 1rem 2rem;
+		border-bottom: 1px solid var(--border);
+		flex-shrink: 0;
+	}
+
+	.risk-header {
+		display: flex;
+		align-items: center;
+		gap: 0.65rem;
+		margin-bottom: 0.5rem;
+		flex-wrap: wrap;
+	}
+
+	.risk-badge {
+		display: inline-block;
+		font-size: 0.65rem;
+		font-weight: 800;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		border-radius: 4px;
+		padding: 0.2rem 0.5rem;
+		flex-shrink: 0;
+	}
+
+	.risk-headline {
+		font-size: 0.88rem;
+		font-weight: 700;
+		flex: 1;
+		min-width: 0;
+	}
+
+	.risk-miss {
+		font-size: 0.78rem;
+		white-space: nowrap;
+		color: var(--text-muted);
+	}
+	.risk-miss strong { color: var(--text); }
+
+	.risk-explanation {
+		font-size: 0.82rem;
+		color: var(--text-muted);
+		line-height: 1.55;
+		margin: 0 0 0.6rem;
+	}
+
+	.risk-drivers {
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+		flex-wrap: wrap;
+	}
+
+	.risk-drivers-label {
+		font-size: 0.7rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.06em;
+		color: var(--text-muted);
+	}
+
+	.risk-driver-pill {
+		font-size: 0.72rem;
+		padding: 0.15rem 0.5rem;
+		border-radius: 999px;
+		border: 1px solid currentColor;
+		opacity: 0.75;
+	}
+	.driver-pct {
+		opacity: 0.65;
+	}
+
+	/* level-specific colours */
+	/* low = blue */
+	.risk--low {
+		background: #eff6ff;
+		color: #1e40af;
+	}
+	.risk--low .risk-badge { background: #bfdbfe; color: #1e3a8a; }
+	.risk--low .risk-driver-pill { color: #1d4ed8; }
+
+	/* medium = orange */
+	.risk--medium {
+		background: #fff7ed;
+		color: #9a3412;
+	}
+	.risk--medium .risk-badge { background: #fed7aa; color: #7c2d12; }
+	.risk--medium .risk-driver-pill { color: #c2410c; }
+
+	/* high = red/pink */
+	.risk--high {
+		background: #fef2f2;
+		color: #991b1b;
+	}
+	.risk--high .risk-badge { background: #fecaca; color: #7f1d1d; }
+	.risk--high .risk-driver-pill { color: #dc2626; }
+
+	/* Dark mode overrides */
+	:global([data-theme="dark"]) .risk--low    { background: rgba(30,80,200,0.12); color: #93c5fd; }
+	:global([data-theme="dark"]) .risk--low .risk-badge { background: rgba(30,80,200,0.28); color: #bfdbfe; }
+	:global([data-theme="dark"]) .risk--low .risk-driver-pill { color: #93c5fd; }
+	:global([data-theme="dark"]) .risk--medium { background: rgba(200,80,20,0.16); color: #fdba74; }
+	:global([data-theme="dark"]) .risk--medium .risk-badge { background: rgba(200,80,20,0.32); color: #fed7aa; }
+	:global([data-theme="dark"]) .risk--medium .risk-driver-pill { color: #fdba74; }
+	:global([data-theme="dark"]) .risk--high { background: rgba(220,20,50,0.24); color: #fc3b6e; }
+	:global([data-theme="dark"]) .risk--high .risk-badge { background: rgba(220,20,50,0.44); color: #fd7598; }
+	:global([data-theme="dark"]) .risk--high .risk-driver-pill { color: #fc3b6e; }
 
 	/* Sections */
 	.gantt-section,

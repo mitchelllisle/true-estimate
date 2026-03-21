@@ -4,6 +4,24 @@ export type Item = {
 	weeks: number | null;
 };
 
+const PROJECT_ACTIONS = [
+	'Flying', 'Leaping', 'Charging', 'Dancing', 'Prowling', 'Howling', 'Gliding',
+	'Sprinting', 'Diving', 'Soaring', 'Trotting', 'Racing', 'Drifting', 'Roaming',
+	'Wandering', 'Stalking', 'Bounding', 'Galloping', 'Perching', 'Wading',
+];
+
+const PROJECT_ANIMALS = [
+	'Goose', 'Fox', 'Panda', 'Falcon', 'Otter', 'Wolf', 'Crane', 'Lynx', 'Heron',
+	'Badger', 'Elk', 'Jaguar', 'Raven', 'Bison', 'Swan', 'Bear', 'Eagle', 'Hawk',
+	'Deer', 'Moose', 'Owl', 'Seal', 'Dolphin', 'Marmot', 'Ibis',
+];
+
+export function generateProjectName(): string {
+	const action = PROJECT_ACTIONS[Math.floor(Math.random() * PROJECT_ACTIONS.length)];
+	const animal = PROJECT_ANIMALS[Math.floor(Math.random() * PROJECT_ANIMALS.length)];
+	return `${action}${animal}`;
+}
+
 export type Category = {
 	id: string;
 	name: string;
@@ -133,44 +151,33 @@ function sampleBackendProject(): Category[] {
 		cat.items = items.map((i) => ({ ...i, id: crypto.randomUUID() }));
 	};
 
+	// Internal product build — lean overhead, large focused core
+	// Risk profile: ~low probability (~32% overhead)
 	add('around', [
-		{ description: 'Weekly standups & async updates', weeks: 0.5 },
-		{ description: 'Sprint planning & retrospectives', weeks: 0.5 },
-		{ description: 'Client status reports', weeks: 0.25 }
-	]);
-	add('to-get', [
-		{ description: 'Discovery call & requirements scoping', weeks: 0.5 },
-		{ description: 'Proposal, estimate & contract', weeks: 0.5 }
+		{ description: 'Weekly standups & sprint planning', weeks: 0.5 },
 	]);
 	add('before', [
 		{ description: 'Dev environment & repo setup', weeks: 0.5 },
-		{ description: 'CI/CD pipeline & staging environment', weeks: 0.5 },
-		{ description: 'Design system & component library scaffold', weeks: 0.5 }
+		{ description: 'CI/CD pipeline & infrastructure', weeks: 0.5 },
 	]);
 	add('the-work', [
-		{ description: 'Authentication & user accounts', weeks: 1 },
-		{ description: 'Dashboard & data visualisation', weeks: 1.5 },
-		{ description: 'Core data tables with filtering & search', weeks: 1 },
-		{ description: 'REST API integration', weeks: 1 },
-		{ description: 'Email notifications', weeks: 0.5 },
-		{ description: 'Mobile-responsive polish', weeks: 0.5 }
+		{ description: 'Authentication & user accounts', weeks: 1.5 },
+		{ description: 'Dashboard & data visualisation', weeks: 2 },
+		{ description: 'Core API endpoints & business logic', weeks: 2 },
+		{ description: 'Email notifications & async jobs', weeks: 0.5 },
+		{ description: 'Unit & integration tests', weeks: 1 },
 	]);
 	add('between', [
-		{ description: 'Bug fixes from client review rounds', weeks: 0.5 },
-		{ description: 'Performance optimisation', weeks: 0.5 },
-		{ description: 'Code review & refactoring', weeks: 0.5 }
+		{ description: 'Bug fixes from internal review rounds', weeks: 0.5 },
 	]);
 	add('beyond', [
-		{ description: 'Feature additions from stakeholder feedback', weeks: 1 },
-		{ description: 'Design revisions after visual review', weeks: 0.5 }
+		{ description: 'Feature additions from stakeholder review', weeks: 0.5 },
 	]);
 	add('outside', [
-		{ description: 'Third-party API delays or breaking changes', weeks: 0.5 },
-		{ description: 'Contingency buffer', weeks: 0.5 }
+		{ description: 'Contingency buffer', weeks: 0.5 },
 	]);
 	add('after', [
-		{ description: 'Monthly dependency upgrades', weeks: 0.25 },
-		{ description: 'Bug monitoring & patch releases', weeks: 0.25 }
+		{ description: 'Bug monitoring & patch releases', weeks: 0.25 },
 	]);
 
 	return cats;
@@ -233,43 +240,47 @@ function sampleDataProject(): Category[] {
 		cat.items = items.map((i) => ({ ...i, id: crypto.randomUUID() }));
 	};
 
+	// Complex data platform — heavy stakeholder overhead, lots of scope creep
+	// Risk profile: ~high probability (~66% overhead)
 	add('around', [
-		{ description: 'Weekly stakeholder syncs & data demos', weeks: 0.5 },
+		{ description: 'Weekly stakeholder syncs & data demos', weeks: 0.75 },
 		{ description: 'Sprint planning & retrospectives', weeks: 0.25 },
-		{ description: 'Executive reporting & presentations', weeks: 0.5 }
+		{ description: 'Executive reporting & presentations', weeks: 0.5 },
+		{ description: 'Data governance & sign-off meetings', weeks: 0.5 },
 	]);
 	add('to-get', [
 		{ description: 'Data audit & requirements scoping', weeks: 1 },
-		{ description: 'Proposal, estimate & contract', weeks: 0.5 }
+		{ description: 'Proposal, estimate & contract', weeks: 0.5 },
 	]);
 	add('before', [
 		{ description: 'Data warehouse & environment setup', weeks: 1 },
 		{ description: 'Pipeline scaffolding & orchestration config', weeks: 0.5 },
-		{ description: 'Access, credentials & source connections', weeks: 0.5 }
+		{ description: 'Access, credentials & source connections', weeks: 0.5 },
 	]);
 	add('the-work', [
 		{ description: 'Ingestion & ETL pipelines', weeks: 2 },
 		{ description: 'Data modelling & transformation layer', weeks: 1.5 },
 		{ description: 'KPI definitions & metrics catalogue', weeks: 0.5 },
 		{ description: 'Dashboard & reporting build', weeks: 1.5 },
-		{ description: 'Data quality checks & alerting', weeks: 0.5 }
+		{ description: 'Data quality checks & alerting', weeks: 0.5 },
 	]);
 	add('between', [
 		{ description: 'Data validation & reconciliation', weeks: 0.5 },
 		{ description: 'Model tuning from stakeholder review', weeks: 0.5 },
-		{ description: 'Query & pipeline performance optimisation', weeks: 0.5 }
+		{ description: 'Query & pipeline performance optimisation', weeks: 0.5 },
 	]);
 	add('beyond', [
-		{ description: 'Additional metrics & dimensions requested', weeks: 1 },
-		{ description: 'New data source integrations', weeks: 0.5 }
+		{ description: 'Additional metrics & dimensions requested mid-project', weeks: 1.5 },
+		{ description: 'New data source integrations added to scope', weeks: 0.5 },
+		{ description: 'Dashboard redesign after stakeholder review', weeks: 0.5 },
 	]);
 	add('outside', [
-		{ description: 'Upstream schema or API changes', weeks: 0.5 },
-		{ description: 'Contingency buffer', weeks: 0.5 }
+		{ description: 'Upstream schema or API changes from source systems', weeks: 1 },
+		{ description: 'Data quality issues in source data', weeks: 0.5 },
 	]);
 	add('after', [
 		{ description: 'Pipeline monitoring & incident response', weeks: 0.5 },
-		{ description: 'Schema migration & dependency upgrades', weeks: 0.25 }
+		{ description: 'Schema migration & dependency upgrades', weeks: 0.25 },
 	]);
 
 	return cats;
@@ -329,7 +340,7 @@ export type ElapsedEntry = {
 
 /** Per-category effort vs estimated elapsed calendar time */
 export function getElapsedBreakdown(cats: Category[]): ElapsedEntry[] {
-	const { acq, prep, core, iter, chng, prbs, aftr, core_e, projectEnd, iter_e, chng_e, prbs_s, prbs_e, aftr_e } = timelinePositions(cats);
+	const { acq, prep, core, iter, chng, prbs, aftr, core_e, projectEnd, iter_e, chng_e, prbs_s, prbs_e, aftr_e, tMax } = timelinePositions(cats);
 	const r = (n: number) => Math.round(n * 10) / 10;
 	const entries: ElapsedEntry[] = [];
 
@@ -342,7 +353,7 @@ export function getElapsedBreakdown(cats: Category[]): ElapsedEntry[] {
 	push('to-get',   acq,  acq * 1.5,         'pre-project (1.5×)', 'Acquisition rarely happens in one block — spread 1.5× over calendar before kickoff.');
 	push('before',   prep, prep,               '1:1 sequential',     'Setup work happens in order at the start; effort equals elapsed time.');
 	push('the-work', core, core,               '1:1 sequential',     'Core execution is sequential; effort equals elapsed time.');
-	push('around',   eff('around'), projectEnd,'full project span',   'Admin & meetings run concurrently throughout — elapsed = entire project duration.');
+	push('around',   eff('around'), tMax,      'full project span',   'Admin & meetings run concurrently throughout — elapsed = entire project duration.');
 	push('between',  iter, iter_e - (prep + core * 0.4), 'overlapping + 1.5w tail', 'Iteration begins ~40% into core work and runs 1.5w beyond the effort estimate.');
 	push('beyond',   chng, chng_e - (prep + core * 0.55),'overlapping + 2w tail',   'Changes emerge ~55% into core and tend to run 2w beyond the effort estimate.');
 	push('outside',  prbs, r(prbs_e - prbs_s), 'distributed (≈88%)', 'Surprises are distributed across ~88% of the project timeline — always spread out.');
@@ -355,6 +366,73 @@ export function getElapsedBreakdown(cats: Category[]): ElapsedEntry[] {
 
 // ── Unit system ────────────────────────────────────────────────────
 export type Unit = 'weeks' | 'days' | 'months' | 'sprints';
+
+// ── Risk assessment ────────────────────────────────────────────────
+
+export type RiskLevel = 'low' | 'medium' | 'high';
+
+export type RiskAssessment = {
+	level: RiskLevel;
+	/** % of total effort that is non-core (how much a core-only quote would miss) */
+	underestimationPct: number;
+	/** The top non-core categories by effort contribution, highest first */
+	drivers: { name: string; subtitle: string; pct: number }[];
+	/** One-sentence headline */
+	headline: string;
+	/** Full explanation of the score */
+	explanation: string;
+};
+
+export function getRiskAssessment(categories: Category[]): RiskAssessment | null {
+	const total = totalWeeks(categories);
+	const core  = coreWeeks(categories);
+	if (total < 0.5 || core <= 0) return null;
+
+	const nonCore = total - core;
+	const underestimationPct = Math.round((nonCore / total) * 100);
+
+	const nonCoreCats = categories
+		.filter((c) => !c.isCore && c.items.length > 0)
+		.map((c) => ({
+			name: c.name,
+			subtitle: c.subtitle,
+			weeks: c.items.reduce((s, i) => s + (i.weeks ?? 0), 0),
+			pct: Math.round((c.items.reduce((s, i) => s + (i.weeks ?? 0), 0) / total) * 100),
+		}))
+		.filter((c) => c.weeks > 0)
+		.sort((a, b) => b.weeks - a.weeks);
+
+	const drivers = nonCoreCats.slice(0, 3).map(({ name, subtitle, pct }) => ({ name, subtitle, pct }));
+
+	const topNames = drivers.map((d) => d.subtitle.toLowerCase()).join(', ');
+
+	let level: RiskLevel;
+	let headline: string;
+	let explanation: string;
+
+	if (underestimationPct < 35) {
+		level = 'low';
+		headline = 'Low probability of overrun — core effort closely reflects the true total';
+		explanation = `A core-only quote would miss about ${underestimationPct}% of the actual work. `
+			+ `Non-core activities${nonCoreCats.length > 0 ? ` (${topNames})` : ''} are modest relative to the deliverable. `
+			+ `The chance of a significant blowout from unquoted work is low.`;
+	} else if (underestimationPct < 60) {
+		level = 'medium';
+		headline = 'Medium probability of overrun — non-core effort is material';
+		explanation = `A core-only quote would underestimate the true total by about ${underestimationPct}%. `
+			+ `The main contributors are ${topNames}. `
+			+ `There is a meaningful chance of cost overruns if these categories aren't surfaced in the quote.`;
+	} else {
+		level = 'high';
+		headline = 'High probability of overrun — surrounding work matches or exceeds the core';
+		explanation = `A core-only quote would miss ${underestimationPct}% of the actual work — `
+			+ `meaning the surrounding work is as large as (or larger than) the deliverable itself. `
+			+ `The primary contributors are ${topNames}. `
+			+ `Without quoting the full picture, cost overruns are highly likely.`;
+	}
+
+	return { level, underestimationPct, drivers, headline, explanation };
+}
 export const UNITS: Unit[] = ['weeks', 'days', 'months', 'sprints'];
 export const UNIT_MULTIPLIERS: Record<Unit, number> = { weeks: 1, days: 5, months: 0.25, sprints: 0.5 };
 export const UNIT_LABELS: Record<Unit, string>      = { weeks: 'Weeks', days: 'Days', months: 'Months', sprints: 'Sprints' };

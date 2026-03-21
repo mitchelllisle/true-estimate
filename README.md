@@ -41,19 +41,19 @@ Enter effort hours (or days/weeks) for each item and the breakdown shows:
 ## Development
 
 ```sh
-npm install
-npm run dev
+yarn install
+yarn dev
 ```
 
 ## Build
 
 ```sh
-npm run build
-npm run preview
+yarn build
+yarn preview
 ```
 
 ## Tests
 
 ```sh
-npm test
+yarn test
 ```

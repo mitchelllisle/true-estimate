@@ -1,14 +1,15 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { slide } from 'svelte/transition';
-	import { initialCategories, sampleCategories, type SampleProject, type Unit, UNITS, UNIT_LABELS, UNIT_SHORT, toUnit } from '$lib/categories';
+	import { initialCategories, sampleCategories, generateProjectName, type SampleProject, type Unit, UNITS, UNIT_LABELS, UNIT_SHORT, toUnit } from '$lib/categories';
 	import type { Item } from '$lib/categories';
 	import CategoryCard from '$lib/components/CategoryCard.svelte';
 	import InlineSummary from '$lib/components/InlineSummary.svelte';
 	import SummaryModal from '$lib/components/SummaryModal.svelte';
 	import ImportModal from '$lib/components/ImportModal.svelte';
 
-	let categories = $state(initialCategories());
+	let categories   = $state(initialCategories());
+	let projectName  = $state(generateProjectName());
 	let modalOpen    = $state(false);
 	let importOpen   = $state(false);
 	let sampleOpen   = $state(false);
@@ -71,6 +72,11 @@
 	const beforeTotal = $derived(scopeTotal(beforeCats));
 	const coreTotal   = $derived(scopeTotal(coreCats));
 	const afterTotal  = $derived(scopeTotal(afterCats));
+
+	const coreExecWeeks     = $derived(coreCats.filter(c => c.isCore).flatMap(c => c.items).reduce((s, i) => s + (i.weeks ?? 0), 0));
+	const coreSurroundWeeks = $derived(coreCats.filter(c => !c.isCore).flatMap(c => c.items).reduce((s, i) => s + (i.weeks ?? 0), 0));
+	const uCoreExec     = $derived(toUnit(coreExecWeeks, unit));
+	const uCoreSurround = $derived(toUnit(coreSurroundWeeks, unit));
 
 	function loadSample(type: SampleProject) {
 		categories = sampleCategories(type);
@@ -145,6 +151,23 @@
 			</span>
 			or <button class="pill-btn" onclick={() => (importOpen = true)}>Upload a CSV</button>.
 		</div>
+		<div class="project-name-row">
+			<label class="project-name-label" for="project-name">Project</label>
+			<input
+				id="project-name"
+				class="project-name-input"
+				type="text"
+				bind:value={projectName}
+				placeholder="Project name"
+				aria-label="Project name"
+			/>
+			<button
+				class="project-name-roll"
+				onclick={() => (projectName = generateProjectName())}
+				title="Generate a new name"
+				aria-label="Generate new project name"
+			>⚄</button>
+		</div>
 	</header>
 
 	<main class="content">
@@ -160,7 +183,11 @@
 					<span class="scope-title">Before the work</span>
 					<span class="scope-hint">Setup, acquisition &amp; preparation</span>
 				</div>
-				{#if beforeTotal > 0}<span class="scope-tally">{beforeTotal} {UNIT_SHORT[unit]}</span>{/if}
+				{#if beforeTotal > 0}
+					<span class="scope-pills">
+						<span class="scope-pill pill--non-core">{beforeTotal}{UNIT_SHORT[unit]} Non-Core</span>
+					</span>
+				{/if}
 				<span class="chevron" class:is-open={openBefore} aria-hidden="true">›</span>
 			</button>
 			{#if openBefore}
@@ -187,7 +214,14 @@
 					<span class="scope-title">The actual work</span>
 					<span class="scope-hint">What you estimate — and everything around it</span>
 				</div>
-				{#if coreTotal > 0}<span class="scope-tally">{coreTotal} {UNIT_SHORT[unit]}</span>{/if}
+				{#if coreTotal > 0}
+					<span class="scope-pills">
+						{#if uCoreExec > 0}<span class="scope-pill pill--core">{uCoreExec}{UNIT_SHORT[unit]} Core</span>{/if}
+						{#if uCoreExec > 0 && uCoreSurround > 0}<span class="pill-sep">+</span>{/if}
+						{#if uCoreSurround > 0}<span class="scope-pill pill--non-core">{uCoreSurround}{UNIT_SHORT[unit]} Non-Core</span>{/if}
+						{#if uCoreExec > 0 && uCoreSurround > 0}<span class="pill-sep">=</span><span class="scope-pill pill--total">{coreTotal}{UNIT_SHORT[unit]}</span>{/if}
+					</span>
+				{/if}
 				<span class="chevron" class:is-open={openCore} aria-hidden="true">›</span>
 			</button>
 			{#if openCore}
@@ -214,7 +248,11 @@
 					<span class="scope-title">After the work</span>
 					<span class="scope-hint">Maintenance, ops &amp; support</span>
 				</div>
-				{#if afterTotal > 0}<span class="scope-tally">{afterTotal} {UNIT_SHORT[unit]}</span>{/if}
+				{#if afterTotal > 0}
+					<span class="scope-pills">
+						<span class="scope-pill pill--non-core">{afterTotal}{UNIT_SHORT[unit]} Non-Core</span>
+					</span>
+				{/if}
 				<span class="chevron" class:is-open={openAfter} aria-hidden="true">›</span>
 			</button>
 			{#if openAfter}
@@ -250,7 +288,7 @@
 <InlineSummary {categories} {unit} onOpenModal={() => (modalOpen = true)} />
 
 {#if modalOpen}
-	<SummaryModal {categories} {unit} onclose={() => (modalOpen = false)} />
+	<SummaryModal {categories} {unit} {projectName} onclose={() => (modalOpen = false)} />
 {/if}
 
 {#if importOpen}
@@ -336,6 +374,58 @@
 	.hero {
 		margin-top: 0.25rem;
 		margin-bottom: 2rem;
+	}
+
+	.project-name-row {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		margin-top: 1.25rem;
+	}
+
+	.project-name-label {
+		font-size: 0.75rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		color: var(--text-muted);
+		white-space: nowrap;
+	}
+
+	.project-name-input {
+		background: none;
+		border: 1.5px solid var(--border);
+		border-radius: 8px;
+		padding: 0.3rem 0.65rem;
+		font: inherit;
+		font-size: 1rem;
+		font-weight: 700;
+		color: var(--text);
+		width: 18ch;
+		transition: border-color 0.15s;
+	}
+
+	.project-name-input:focus {
+		outline: 2px solid var(--text);
+		outline-offset: 2px;
+		border-color: transparent;
+	}
+
+	.project-name-roll {
+		background: none;
+		border: 1.5px solid var(--border);
+		border-radius: 8px;
+		padding: 0.3rem 0.5rem;
+		font-size: 1rem;
+		cursor: pointer;
+		color: var(--text-muted);
+		line-height: 1;
+		transition: background 0.15s, color 0.15s;
+	}
+
+	.project-name-roll:hover {
+		background: var(--hover-tint);
+		color: var(--text);
 	}
 
 	.hero-intro {
@@ -524,6 +614,51 @@
 		padding: 0.15rem 0.55rem;
 		white-space: nowrap;
 		flex-shrink: 0;
+	}
+
+	.scope-pills {
+		margin-left: auto;
+		display: flex;
+		align-items: center;
+		gap: 0.3rem;
+		flex-shrink: 0;
+	}
+
+	.scope-pill {
+		font-size: 0.68rem;
+		font-weight: 600;
+		border-radius: 999px;
+		padding: 0.15rem 0.5rem;
+		white-space: nowrap;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.pill--core {
+		background: rgba(255, 217, 102, 0.25);
+		color: #7a5c00;
+	}
+	:global([data-theme="dark"]) .pill--core {
+		background: rgba(255, 217, 102, 0.15);
+		color: #f5d76e;
+	}
+
+	.pill--non-core {
+		background: var(--tally-bg);
+		color: var(--text-muted);
+	}
+
+	.pill--total {
+		background: rgba(0,0,0,0.06);
+		color: var(--text);
+	}
+	:global([data-theme="dark"]) .pill--total {
+		background: rgba(255,255,255,0.08);
+	}
+
+	.pill-sep {
+		font-size: 0.65rem;
+		color: var(--text-muted);
+		opacity: 0.6;
 	}
 
 	.chevron {
