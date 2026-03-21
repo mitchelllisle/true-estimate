@@ -166,7 +166,7 @@
 			</span>
 			or <button class="pill-btn" onclick={() => (importOpen = true)}>Upload a CSV</button>.
 		</div>
-		<p class="privacy privacy--hero">🔐 Nothing you enter here is stored, sent, or collected. All data exists only in your browser's memory and disappears when you close or refresh the page.</p>
+		<p class="privacy privacy--hero">🧿 Nothing you enter here is stored, sent, or collected. All data exists only in your browser's memory and disappears when you close or refresh the page.</p>
 		<div class="project-name-row">
 			<label class="project-name-label" for="project-name">Project</label>
 			<input
@@ -310,10 +310,6 @@
 			Built by <a href="https://github.com/mitchelllisle" target="_blank" rel="noopener noreferrer">Mitchell Lisle</a>
 			based on <a href="https://davestewart.co.uk/blog/work/project-estimation/" target="_blank" rel="noopener noreferrer">"The work is never just 'the work'"</a>
 			by <a href="https://davestewart.co.uk/" target="_blank" rel="noopener noreferrer">Dave Stewart</a>.
-		</p>
-		<p class="privacy">
-			🔒 Nothing you enter here is stored, sent, or collected. All data exists only in your
-			browser's memory and disappears when you close or refresh the page.
 		</p>
 	</footer>
 </div>
