@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Item } from '$lib/categories';
-	import { type Unit, toUnit, fromUnit, UNIT_SHORT, UNIT_STEPS } from '$lib/categories';
+	import { type Unit, toUnit, fromUnit, UNIT_SHORT, UNIT_STEPS, UNIT_LABELS } from '$lib/categories';
 
 	let {
 		item,
@@ -32,14 +32,41 @@
 
 <div class="item-card" role="group" aria-label="work item">
 	<div class="card-body">
-		<input
-			type="text"
-			class="title-input"
-			placeholder="Title"
-			value={item.description}
-			oninput={(e) => onupdate(item.id, { description: (e.target as HTMLInputElement).value })}
-			aria-label="Item title"
-		/>
+		<div class="title-row">
+			<input
+				type="text"
+				class="title-input"
+				placeholder="Title"
+				value={item.description}
+				oninput={(e) => onupdate(item.id, { description: (e.target as HTMLInputElement).value })}
+				aria-label="Item title"
+			/>
+			<label class="effort-inline">
+				<span class="effort-label">Effort</span>
+				<input
+					type="number"
+					class="weeks"
+					min="0"
+					step={UNIT_STEPS[unit]}
+					placeholder="—"
+					value={item.weeks != null ? toUnit(item.weeks, unit) : ''}
+					oninput={(e) => {
+						const raw = (e.target as HTMLInputElement).value;
+						onupdate(item.id, { weeks: raw === '' ? null : fromUnit(Number(raw), unit) });
+					}}
+					aria-label="{UNIT_LABELS[unit]} estimate (optional)"
+				/>
+				<span class="effort-unit">{UNIT_LABELS[unit]}</span>
+			</label>
+			<button
+				class="remove"
+				onclick={() => onremove(item.id)}
+				aria-label="Remove item"
+				title="Remove"
+			>
+				×
+			</button>
+		</div>
 		<button
 			class="desc-toggle"
 			type="button"
@@ -62,32 +89,6 @@
 		></textarea>
 		{/if}
 	</div>
-	<div class="card-footer">
-		<label class="weeks-label">
-			<span class="effort-label">Effort</span>
-			<input
-				type="number"
-				class="weeks"
-				min="0"
-				step={UNIT_STEPS[unit]}
-				placeholder={UNIT_SHORT[unit]}
-				value={item.weeks != null ? toUnit(item.weeks, unit) : ''}
-				oninput={(e) => {
-					const raw = (e.target as HTMLInputElement).value;
-					onupdate(item.id, { weeks: raw === '' ? null : fromUnit(Number(raw), unit) });
-				}}
-				aria-label="{UNIT_SHORT[unit]} estimate (optional)"
-			/>
-		</label>
-		<button
-			class="remove"
-			onclick={() => onremove(item.id)}
-			aria-label="Remove item"
-			title="Remove"
-		>
-			×
-		</button>
-	</div>
 </div>
 
 <style>
@@ -103,10 +104,16 @@
 		gap: 0;
 	}
 
-	.title-input {
-		width: 100%;
-		border: none;
+	.title-row {
+		display: flex;
+		align-items: center;
 		border-bottom: 1px solid var(--border);
+	}
+
+	.title-input {
+		flex: 1;
+		min-width: 0;
+		border: none;
 		border-radius: 0;
 		padding: 0.45rem 0.6rem;
 		font-size: inherit;
@@ -125,6 +132,27 @@
 	.title-input::placeholder {
 		color: var(--text-muted);
 		font-weight: 400;
+	}
+
+	.effort-inline {
+		display: flex;
+		align-items: center;
+		gap: 0.3rem;
+		padding: 0 0.5rem;
+		border-left: 1px solid var(--border);
+		flex-shrink: 0;
+	}
+
+	.effort-label {
+		font-size: 0.72rem;
+		color: var(--text-muted);
+		white-space: nowrap;
+	}
+
+	.effort-unit {
+		font-size: 0.72rem;
+		color: var(--text-muted);
+		white-space: nowrap;
 	}
 
 	.desc-toggle {
@@ -184,29 +212,8 @@
 		color: var(--text-muted);
 	}
 
-	.card-footer {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		padding: 0.25rem 0.5rem;
-		border-top: 1px solid var(--border);
-		background: var(--surface-subtle, rgba(0,0,0,0.015));
-	}
-
-	.weeks-label {
-		display: flex;
-		align-items: center;
-		gap: 0.35rem;
-	}
-
-	.effort-label {
-		font-size: 0.75rem;
-		color: var(--text-muted);
-		white-space: nowrap;
-	}
-
 	.weeks {
-		width: 4.5rem;
+		width: 3.5rem;
 		font-size: 0.8rem;
 		font-family: inherit;
 		text-align: right;
@@ -236,6 +243,7 @@
 		color: var(--text-muted);
 		border-radius: 50%;
 		padding: 0;
+		margin: 0 0.1rem;
 		transition: background var(--transition), color var(--transition);
 	}
 
