@@ -1,13 +1,16 @@
 <script lang="ts">
 	import { tick } from 'svelte';
 	import type { Item } from '$lib/categories';
+	import { type Unit, toUnit, fromUnit, UNIT_SHORT, UNIT_STEPS } from '$lib/categories';
 
 	let {
 		item,
+		unit = 'weeks' as Unit,
 		onupdate,
 		onremove
 	}: {
 		item: Item;
+		unit?: Unit;
 		onupdate: (id: string, patch: Partial<Item>) => void;
 		onremove: (id: string) => void;
 	} = $props();
@@ -49,19 +52,19 @@
 		/>
 	{/if}
 	<label class="weeks-label">
-		<span class="sr-only">Weeks estimate</span>
+		<span class="sr-only">{UNIT_SHORT[unit]} estimate</span>
 		<input
 			type="number"
 			class="weeks"
 			min="0"
-			step="0.5"
-			placeholder="wks"
-			value={item.weeks ?? ''}
+			step={UNIT_STEPS[unit]}
+			placeholder={UNIT_SHORT[unit]}
+			value={item.weeks != null ? toUnit(item.weeks, unit) : ''}
 			oninput={(e) => {
 				const raw = (e.target as HTMLInputElement).value;
-				onupdate(item.id, { weeks: raw === '' ? null : Number(raw) });
+				onupdate(item.id, { weeks: raw === '' ? null : fromUnit(Number(raw), unit) });
 			}}
-			aria-label="Weeks estimate (optional)"
+			aria-label="{UNIT_SHORT[unit]} estimate (optional)"
 		/>
 	</label>
 	<button

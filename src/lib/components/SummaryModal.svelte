@@ -1,24 +1,32 @@
 <script lang="ts">
 	import { fade, fly } from 'svelte/transition';
 	import type { Category } from '$lib/categories';
-	import { buildCsv, coreWeeks, totalWeeks } from '$lib/categories';
+	import { buildCsv, coreWeeks, totalWeeks, type Unit, toUnit, UNIT_LABELS, UNIT_SHORT } from '$lib/categories';
 	import GanttChart from './GanttChart.svelte';
 
 	let {
 		categories,
+		unit = 'weeks' as Unit,
 		onclose
 	}: {
 		categories: Category[];
+		unit?: Unit;
 		onclose: () => void;
 	} = $props();
 
-	const core  = $derived(coreWeeks(categories));
-	const total = $derived(totalWeeks(categories));
-	const pctCore = $derived(total > 0 ? Math.round((core / total) * 100) : 0);
+	const core     = $derived(coreWeeks(categories));
+	const total    = $derived(totalWeeks(categories));
+	const pctCore  = $derived(total > 0 ? Math.round((core / total) * 100) : 0);
 
-	// Range projection: article says core ≈ 20% of total effort → ~4–5× multiplier
 	const projLow  = $derived(Math.round(core * 3.5 * 10) / 10);
 	const projHigh = $derived(Math.round(core * 5 * 10) / 10);
+
+	const uCore     = $derived(toUnit(core, unit));
+	const uTotal    = $derived(toUnit(total, unit));
+	const uProjLow  = $derived(toUnit(projLow, unit));
+	const uProjHigh = $derived(toUnit(projHigh, unit));
+	const uShort    = $derived(UNIT_SHORT[unit]);
+	const uLabel    = $derived(UNIT_LABELS[unit].toLowerCase());
 
 	function downloadCsv() {
 		const csv = buildCsv(categories);
@@ -52,106 +60,110 @@
 	tabindex="-1"
 	transition:fade={{ duration: 180 }}
 >
-	<div class="modal" transition:fly={{ y: 24, duration: 220 }}>
+	<div class="modal" transition:fly={{ y: 12, duration: 200 }}>
 		<header class="modal-header">
 			<h2>Project breakdown</h2>
 			<button class="close-btn" onclick={onclose} aria-label="Close breakdown">×</button>
 		</header>
 
 		<div class="modal-body">
-			<!-- Table -->
-			<div class="table-wrap">
-				<table>
-					<thead>
-						<tr>
-							<th></th>
-							<th>Category</th>
-							<th>Items</th>
-							<th class="num">Weeks</th>
-							<th class="num">% of total</th>
-						</tr>
-					</thead>
-					<tbody>
-						{#each categories as cat}
-							{@const catWeeks = cat.items.reduce((s, i) => s + (i.weeks ?? 0), 0)}
-							{@const catPct = total > 0 ? Math.round((catWeeks / total) * 100) : 0}
-							<tr class:core-row={cat.isCore} class:zero={catWeeks === 0}>
-								<td>
-									<span class="swatch" style="background: {cat.color};" aria-hidden="true"></span>
-								</td>
-								<td>
-									<span class="cat-name">{cat.name}</span>
-									<span class="cat-sub">{cat.subtitle}</span>
-								</td>
-								<td class="item-count">{cat.items.length}</td>
-								<td class="num">{catWeeks > 0 ? catWeeks : '—'}</td>
-								<td class="num">{catWeeks > 0 ? catPct + '%' : '—'}</td>
-							</tr>
-						{/each}
-						<tr class="total-row">
-							<td></td>
-							<td><strong>Total</strong></td>
-							<td></td>
-							<td class="num"><strong>{total}</strong></td>
-							<td class="num"><strong>100%</strong></td>
-						</tr>
-					</tbody>
-				</table>
-			</div>
+			<!-- ── Gantt – most prominent ──────────────────── -->
+			{#if total > 0}
+				<section class="gantt-section">
+					<h3 class="section-label">Project timeline</h3>
+					<GanttChart {categories} {unit} />
+				</section>
+			{/if}
 
-			<!-- Callout -->
-			{#if core > 0}
-				<div class="callout">
-					<div class="callout-icon" aria-hidden="true">💡</div>
-					<div class="callout-text">
-						<strong>You estimated {core} week{core !== 1 ? 's' : ''} for "the work"</strong>
-						— that's only <strong>{pctCore}%</strong> of everything entered so far.
-						{#if total > core}
-							<br />Based on the rest of the work listed, the realistic total is
-							<strong>{total} weeks</strong>. If only the core work had been estimated,
-							the project would likely run
-							<strong>{projLow}–{projHigh} weeks</strong> in practice
-							(3.5–5× the original estimate).
-						{:else}
-							<br />Try adding items to the other categories to see how quickly the total grows.
-						{/if}
+			<!-- ── Insight callout + category table ─────────── -->
+			<section class="details-section">
+				<div class="details-left">
+					{#if core > 0}
+						<div class="callout">
+							<div class="callout-icon" aria-hidden="true">💡</div>
+							<div class="callout-text">
+								<strong>You estimated {uCore} {uLabel} for “the work”</strong>
+								— that’s only <strong>{pctCore}%</strong> of everything entered so far.
+								{#if total > core}
+									<br />Based on the rest of the work listed, the realistic total is
+									<strong>{uTotal} {uLabel}</strong>. If only the core work had been estimated,
+									the project would likely run
+									<strong>{uProjLow}–{uProjHigh} {uLabel}</strong> in practice
+									(3.5–5× the original estimate).
+								{:else}
+									<br />Try adding items to the other categories to see how quickly the total grows.
+								{/if}
+							</div>
+						</div>
+					{/if}
+				</div>
+				<div class="details-right">
+					<div class="table-wrap">
+						<table>
+							<thead>
+								<tr>
+									<th></th>
+									<th>Category</th>
+									<th>Items</th>
+									<th class="num">{UNIT_LABELS[unit]}</th>
+									<th class="num">% of total</th>
+								</tr>
+							</thead>
+							<tbody>
+								{#each categories as cat}
+									{@const catWeeks = cat.items.reduce((s, i) => s + (i.weeks ?? 0), 0)}
+									{@const catPct = total > 0 ? Math.round((catWeeks / total) * 100) : 0}
+									<tr class:core-row={cat.isCore} class:zero={catWeeks === 0}>
+										<td><span class="swatch" style="background: {cat.color};" aria-hidden="true"></span></td>
+										<td>
+											<span class="cat-name">{cat.name}</span>
+											<span class="cat-sub">{cat.subtitle}</span>
+										</td>
+										<td class="item-count">{cat.items.length}</td>
+										<td class="num">{catWeeks > 0 ? toUnit(catWeeks, unit) + uShort : '—'}</td>
+										<td class="num">{catWeeks > 0 ? catPct + '%' : '—'}</td>
+									</tr>
+								{/each}
+								<tr class="total-row">
+									<td></td>
+									<td><strong>Total</strong></td>
+									<td></td>
+									<td class="num"><strong>{uTotal}{uShort}</strong></td>
+									<td class="num"><strong>100%</strong></td>
+								</tr>
+							</tbody>
+						</table>
 					</div>
 				</div>
-			{/if}
+			</section>
 
-			<!-- Gantt timeline -->
-			{#if total > 0}
-				<div class="timeline-section">
-					<h3 class="section-title">Project timeline</h3>
-					<GanttChart {categories} />
-				</div>
-			{/if}
-
-			<!-- Item detail list (collapsible per category) -->
+			<!-- ── All items ────────────────────────────────────── -->
 			{#if categories.some((c) => c.items.length > 0)}
-				<div class="item-list">
-					<h3 class="section-title">All items</h3>
-					{#each categories.filter((c) => c.items.length > 0) as cat}
-						<div class="cat-group">
-							<div class="cat-group-header" style="background: {cat.color}; color: {cat.textColor};">
-								<span>{cat.name}</span>
-								<span class="cat-group-weeks">
-									{cat.items.reduce((s, i) => s + (i.weeks ?? 0), 0)}w
-								</span>
+				<section class="items-section">
+					<h3 class="section-label">All items</h3>
+					<div class="item-list">
+						{#each categories.filter((c) => c.items.length > 0) as cat}
+							<div class="cat-group">
+								<div class="cat-group-header" style="background: {cat.color}; color: {cat.textColor};">
+									<span>{cat.name}</span>
+									<span class="cat-group-weeks">
+										{toUnit(cat.items.reduce((s, i) => s + (i.weeks ?? 0), 0), unit)}{uShort}
+									</span>
+								</div>
+								<ul>
+									{#each cat.items as item}
+										<li>
+											<span class="item-desc">{item.description || '(no description)'}</span>
+											<span class="item-weeks">
+												{item.weeks != null ? toUnit(item.weeks, unit) + uShort : 'no estimate'}
+											</span>
+										</li>
+									{/each}
+								</ul>
 							</div>
-							<ul>
-								{#each cat.items as item}
-									<li>
-										<span class="item-desc">{item.description || '(no description)'}</span>
-										<span class="item-weeks">
-											{item.weeks != null ? item.weeks + 'w' : 'no estimate'}
-										</span>
-									</li>
-								{/each}
-							</ul>
-						</div>
-					{/each}
-				</div>
+						{/each}
+					</div>
+				</section>
 			{/if}
 		</div>
 
@@ -169,20 +181,19 @@
 		position: fixed;
 		inset: 0;
 		z-index: 200;
-		background: rgba(0, 0, 0, 0.45);
+		background: rgba(0, 0, 0, 0.6);
 		display: flex;
-		align-items: center;
-		justify-content: center;
-		padding: 1rem;
+		align-items: stretch;
+		padding: 0;
 	}
 
 	.modal {
 		background: var(--surface);
-		border-radius: var(--radius);
-		box-shadow: var(--shadow-lg);
+		border-radius: 0;
+		box-shadow: none;
 		width: 100%;
-		max-width: 780px;
-		max-height: 90vh;
+		max-width: 100%;
+		height: 100%;
 		display: flex;
 		flex-direction: column;
 		overflow: hidden;
@@ -192,13 +203,13 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		padding: 1.1rem 1.25rem 1rem;
+		padding: 1rem 2rem;
 		border-bottom: 1px solid var(--border);
 		flex-shrink: 0;
 	}
 
 	.modal-header h2 {
-		font-size: 1.1rem;
+		font-size: 1rem;
 		font-weight: 700;
 	}
 
@@ -214,11 +225,45 @@
 
 	.modal-body {
 		overflow-y: auto;
-		padding: 1.25rem;
 		display: flex;
 		flex-direction: column;
-		gap: 1.25rem;
 		flex: 1;
+	}
+
+	/* ── Modal sections ───────────────────────────── */
+	.gantt-section {
+		padding: 1.75rem 2rem 1.5rem;
+		border-bottom: 1px solid var(--border);
+		flex-shrink: 0;
+	}
+
+	.details-section {
+		display: grid;
+		grid-template-columns: 1fr 1.5fr;
+		border-bottom: 1px solid var(--border);
+	}
+
+	.details-left {
+		padding: 1.5rem;
+		border-right: 1px solid var(--border);
+	}
+
+	.details-right {
+		padding: 1.5rem;
+		overflow-x: auto;
+	}
+
+	.items-section {
+		padding: 1.5rem 2rem 2rem;
+	}
+
+	.section-label {
+		font-size: 0.72rem;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.07em;
+		color: var(--text-muted);
+		margin-bottom: 1rem;
 	}
 
 	/* Table */
@@ -299,22 +344,8 @@
 	}
 	.callout-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 0.05rem; }
 
-	/* Timeline section */
-	.timeline-section {
-		display: flex;
-		flex-direction: column;
-		gap: 0;
-	}
+	/* Timeline section (replaced by .gantt-section) */
 
-	/* Item list */
-	.section-title {
-		font-size: 0.8rem;
-		font-weight: 700;
-		text-transform: uppercase;
-		letter-spacing: 0.06em;
-		color: var(--text-muted);
-		margin-bottom: 0.5rem;
-	}
 
 	.item-list { display: flex; flex-direction: column; gap: 0.75rem; }
 
@@ -362,7 +393,7 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		padding: 0.9rem 1.25rem;
+		padding: 0.9rem 2rem;
 		border-top: 1px solid var(--border);
 		flex-shrink: 0;
 		gap: 0.75rem;
@@ -389,7 +420,6 @@
 
 	@media print {
 		.modal-footer { display: none; }
-		.modal { box-shadow: none; max-height: none; }
-		.backdrop { position: static; background: none; padding: 0; }
+		.backdrop { position: static; background: none; }
 	}
 </style>

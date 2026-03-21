@@ -1,18 +1,24 @@
 <script lang="ts">
 	import type { Category } from '$lib/categories';
-	import { coreWeeks, hiddenWeeks, totalWeeks } from '$lib/categories';
+	import { coreWeeks, hiddenWeeks, totalWeeks, type Unit, toUnit, UNIT_SHORT } from '$lib/categories';
 
 	let {
 		categories,
+		unit = 'weeks' as Unit,
 		onOpenModal
 	}: {
 		categories: Category[];
+		unit?: Unit;
 		onOpenModal: () => void;
 	} = $props();
 
 	const core    = $derived(coreWeeks(categories));
 	const hidden  = $derived(hiddenWeeks(categories));
 	const total   = $derived(totalWeeks(categories));
+	const uCore   = $derived(toUnit(core, unit));
+	const uHidden = $derived(toUnit(hidden, unit));
+	const uTotal  = $derived(toUnit(total, unit));
+	const uShort  = $derived(UNIT_SHORT[unit]);
 
 	// Proportional bar segments — one per category (non-zero only)
 	const segments = $derived(
@@ -34,17 +40,17 @@
 		<div class="stats">
 			<span class="stat">
 				<span class="stat-label">Estimated</span>
-				<span class="stat-value core">{core}<span class="unit">w</span></span>
+				<span class="stat-value core">{uCore}<span class="unit">{uShort}</span></span>
 			</span>
 			<span class="divider" aria-hidden="true">+</span>
 			<span class="stat">
 				<span class="stat-label">Hidden</span>
-				<span class="stat-value">{hidden}<span class="unit">w</span></span>
+				<span class="stat-value">{uHidden}<span class="unit">{uShort}</span></span>
 			</span>
 			<span class="divider" aria-hidden="true">=</span>
 			<span class="stat">
 				<span class="stat-label">Total</span>
-				<span class="stat-value total">{total}<span class="unit">w</span></span>
+				<span class="stat-value total">{uTotal}<span class="unit">{uShort}</span></span>
 			</span>
 		</div>
 

@@ -1,15 +1,18 @@
 <script lang="ts">
 	import { fly } from 'svelte/transition';
 	import type { Category, Item } from '$lib/categories';
+	import { type Unit, toUnit, UNIT_SHORT } from '$lib/categories';
 	import ItemRow from './ItemRow.svelte';
 
 	let {
 		category,
+		unit = 'weeks' as Unit,
 		onadditem,
 		onupdateitem,
 		onremoveitem
 	}: {
 		category: Category;
+		unit?: Unit;
 		onadditem: (categoryId: string) => void;
 		onupdateitem: (categoryId: string, itemId: string, patch: Partial<Item>) => void;
 		onremoveitem: (categoryId: string, itemId: string) => void;
@@ -36,7 +39,7 @@
 		<p class="description">{#each parseDescription(category.description) as seg}{#if seg.isCode}<code>{seg.content}</code>{:else}{seg.content}{/if}{/each}</p>
 		{#if weekTotal > 0}
 			<div class="week-badge" transition:fly={{ x: 6, duration: 200 }}>
-				{weekTotal}<span class="week-unit">w</span>
+				{toUnit(weekTotal, unit)}<span class="week-unit">{UNIT_SHORT[unit]}</span>
 			</div>
 		{/if}
 	</div>
@@ -48,6 +51,7 @@
 				<div transition:fly={{ y: -5, duration: 180 }}>
 					<ItemRow
 						{item}
+						{unit}
 						onupdate={(id, patch) => onupdateitem(category.id, id, patch)}
 						onremove={(id) => onremoveitem(category.id, id)}
 					/>

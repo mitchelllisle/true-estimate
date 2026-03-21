@@ -1,7 +1,14 @@
 <script lang="ts">
 	import type { Category } from '$lib/categories';
+	import { type Unit, toUnit, UNIT_SHORT } from '$lib/categories';
 
-	let { categories }: { categories: Category[] } = $props();
+	let {
+		categories,
+		unit = 'weeks' as Unit
+	}: {
+		categories: Category[];
+		unit?: Unit;
+	} = $props();
 
 	type Bar = {
 		id: string;
@@ -15,6 +22,7 @@
 		note: string;
 		isPreProject: boolean;
 		isFullSpan: boolean;
+		isSpread: boolean;
 	};
 
 	type ChartData = {
@@ -95,7 +103,8 @@
 			e: number,
 			note: string,
 			isPreProject = false,
-			isFullSpan   = false
+			isFullSpan   = false,
+			isSpread     = false
 		) => {
 			if (eff(id) === 0) return;
 			if (e <= s && !isFullSpan) return;
@@ -112,18 +121,20 @@
 				note,
 				isPreProject,
 				isFullSpan,
+				isSpread,
 			});
 		};
 
 		// Order matches the logical project flow
-		push('to-get',   acq_s,  acq_e,  'Pre-project',         true,  false);
-		push('before',   prep_s, prep_e, '');
-		push('around',   admn_s, admn_e, 'Spans full project',   false, true);
-		push('the-work', core_s, core_e, '');
-		push('between',  iter_s, iter_e, 'Overlaps with core');
-		push('beyond',   chng_s, chng_e, 'Overlaps with core');
-		push('outside',  prbs_s, prbs_e, 'Spread across project');
-		push('after',    aftr_s, aftr_e, 'Elapsed ≈ 2× effort');
+		//                                                      pre    fullspan  spread
+		push('to-get',   acq_s,  acq_e,  'Pre-project',        true,  false,    false);
+		push('before',   prep_s, prep_e, '',                    false, false,    false);
+		push('around',   admn_s, admn_e, 'Spans full project',  false, true,     true);
+		push('the-work', core_s, core_e, '',                    false, false,    false);
+		push('between',  iter_s, iter_e, 'Overlaps with core',  false, false,    true);
+		push('beyond',   chng_s, chng_e, 'Overlaps with core',  false, false,    true);
+		push('outside',  prbs_s, prbs_e, 'Spread across project',false,false,    true);
+		push('after',    aftr_s, aftr_e, 'Elapsed ≈ 2× effort', false, false,    true);
 
 		// ── Ruler ticks (project-relative, w=0 is kickoff) ────────────────
 		const step = tMax <= 6 ? 1 : tMax <= 14 ? 2 : 4;
@@ -146,7 +157,11 @@
 {#if chart}
 	<div class="gantt-header">
 		<span class="gantt-cal">~{chart.totalCalWeeks} calendar weeks</span>
-		<span class="gantt-legend">Bar&nbsp;=&nbsp;elapsed time &nbsp;·&nbsp; Label&nbsp;=&nbsp;effort allocated</span>
+		<span class="gantt-legend">
+			<span class="legend-swatch legend-swatch--solid"></span> Effort (concentrated)
+			&nbsp;&nbsp;
+			<span class="legend-swatch legend-swatch--hatched"></span> Spread across timeline
+		</span>
 	</div>
 
 	<div class="gantt-wrap">
@@ -187,11 +202,10 @@
 						<div
 							class="bar"
 							class:bar--preproject={bar.isPreProject}
-							class:bar--fullspan={bar.isFullSpan}
-							style="left: {bar.startPct}%; width: {bar.widthPct}%; background: {bar.color}; color: {bar.textColor};"
+							class:bar--fullspan={bar.isFullSpan}						class:bar--spread={bar.isSpread}							style="left: {bar.startPct}%; width: {bar.widthPct}%; background: {bar.color}; color: {bar.textColor};"
 							title="{bar.name} — {bar.effortWeeks}w effort"
 						>
-							<span class="bar-text">{bar.effortWeeks}w</span>
+							<span class="bar-text">{toUnit(bar.effortWeeks, unit)}{UNIT_SHORT[unit]}</span>
 						</div>
 					</div>
 				</div>
@@ -221,6 +235,29 @@
 	.gantt-legend {
 		font-size: 0.66rem;
 		color: var(--text-muted);
+		display: inline-flex;
+		align-items: center;
+		gap: 0.25rem;
+	}
+
+	.legend-swatch {
+		display: inline-block;
+		width: 18px;
+		height: 10px;
+		border-radius: 2px;
+		background: #aaa;
+		vertical-align: middle;
+		flex-shrink: 0;
+	}
+
+	.legend-swatch--hatched {
+		background-image: repeating-linear-gradient(
+			-45deg,
+			transparent,
+			transparent 3px,
+			rgba(255, 255, 255, 0.45) 3px,
+			rgba(255, 255, 255, 0.45) 4px
+		);
 	}
 
 	.gantt-wrap {
@@ -375,6 +412,22 @@
 		height: 12px;
 		border-radius: 3px;
 		opacity: 0.6;
+	}
+
+	/* Spread bars: diagonal hatching to show effort ≠ elapsed calendar time */
+	.bar--spread::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+		border-radius: inherit;
+		background-image: repeating-linear-gradient(
+			-45deg,
+			transparent,
+			transparent 4px,
+			rgba(255, 255, 255, 0.3) 4px,
+			rgba(255, 255, 255, 0.3) 5px
+		);
+		pointer-events: none;
 	}
 
 	.bar-text {

@@ -172,6 +172,23 @@ export function hiddenWeeks(categories: Category[]): number {
 	return totalWeeks(categories) - coreWeeks(categories);
 }
 
+// ── Unit system ────────────────────────────────────────────────────
+export type Unit = 'weeks' | 'days' | 'months' | 'sprints';
+export const UNITS: Unit[] = ['weeks', 'days', 'months', 'sprints'];
+export const UNIT_MULTIPLIERS: Record<Unit, number> = { weeks: 1, days: 5, months: 0.25, sprints: 0.5 };
+export const UNIT_LABELS: Record<Unit, string>      = { weeks: 'Weeks', days: 'Days', months: 'Months', sprints: 'Sprints' };
+export const UNIT_SHORT: Record<Unit, string>        = { weeks: 'w', days: 'd', months: 'mo', sprints: 'sp' };
+export const UNIT_STEPS: Record<Unit, number>        = { weeks: 0.5, days: 1, months: 0.25, sprints: 1 };
+
+/** Convert stored weeks to display value in the given unit */
+export function toUnit(storedWeeks: number, unit: Unit): number {
+	return Math.round(storedWeeks * UNIT_MULTIPLIERS[unit] * 100) / 100;
+}
+/** Convert a user-entered value in the given unit back to stored weeks */
+export function fromUnit(enteredValue: number, unit: Unit): number {
+	return enteredValue / UNIT_MULTIPLIERS[unit];
+}
+
 export function buildCsv(categories: Category[]): string {
 	const rows: string[] = ['Category,Subtitle,Item,Weeks'];
 	for (const cat of categories) {
