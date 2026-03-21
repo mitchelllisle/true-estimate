@@ -321,7 +321,11 @@
 									class:item-tree--last={isLast}
 									style="left: {bar.startPct}%; border-color: {bar.color};"
 								></div>
-								<div class="item-content" style="margin-left: calc({bar.startPct}% + 14px)">
+								<div
+					class="item-content"
+					class:item-content--spread={bar.isSpread || bar.isFullSpan}
+					style="margin-left: calc({bar.startPct}% + 14px); --item-bg: {bar.color};"
+				>
 									<span class="item-desc">{item.description}</span>
 									{#if item.weeks != null}
 										<span class="item-effort">{toUnit(item.weeks, unit)}{UNIT_SHORT[unit]}</span>
@@ -671,6 +675,32 @@
 		padding: 1px 0;
 		border-bottom: 1px solid var(--border);
 		font-size: 0.71rem;
+	}
+
+	.item-content--spread {
+		border-radius: 3px;
+		padding: 1px 5px;
+		background:
+			repeating-linear-gradient(
+				-45deg,
+				transparent,
+				transparent 5px,
+				rgba(0, 0, 0, 0.12) 5px,
+				rgba(0, 0, 0, 0.12) 6px
+			),
+			color-mix(in srgb, var(--item-bg) 38%, transparent);
+	}
+
+	:global([data-theme="dark"]) .item-content--spread {
+		background:
+			repeating-linear-gradient(
+				-45deg,
+				transparent,
+				transparent 5px,
+				rgba(0, 0, 0, 0.25) 5px,
+				rgba(0, 0, 0, 0.25) 6px
+			),
+			color-mix(in srgb, var(--item-bg) 45%, transparent);
 	}
 
 	.item-desc {
