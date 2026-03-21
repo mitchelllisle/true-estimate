@@ -3,6 +3,7 @@
 	import type { Category, Item } from '$lib/categories';
 	import { type Unit, toUnit, UNIT_SHORT } from '$lib/categories';
 	import ItemRow from './ItemRow.svelte';
+	import ExamplesModal from './ExamplesModal.svelte';
 
 	let {
 		category,
@@ -13,7 +14,7 @@
 	}: {
 		category: Category;
 		unit?: Unit;
-		onadditem: (categoryId: string) => void;
+		onadditem: (categoryId: string, description?: string) => void;
 		onupdateitem: (categoryId: string, itemId: string, patch: Partial<Item>) => void;
 		onremoveitem: (categoryId: string, itemId: string) => void;
 	} = $props();
@@ -22,10 +23,20 @@
 		category.items.reduce((sum, i) => sum + (i.weeks ?? 0), 0)
 	);
 
+	let examplesOpen = $state(false);
+
 	function parseDescription(text: string): { content: string; isCode: boolean }[] {
 		return text.split(/`([^`]+)`/).map((part, i) => ({ content: part, isCode: i % 2 === 1 }));
 	}
 </script>
+
+{#if examplesOpen}
+	<ExamplesModal
+		{category}
+		onclose={() => (examplesOpen = false)}
+		onaddexample={(desc) => onadditem(category.id, desc)}
+	/>
+{/if}
 
 <article
 	class="card"
@@ -37,6 +48,9 @@
 		<span class="subtitle">{category.subtitle}</span>
 		<h2 class="name">{category.name}</h2>
 		<p class="description">{#each parseDescription(category.description) as seg}{#if seg.isCode}<code>{seg.content}</code>{:else}{seg.content}{/if}{/each}</p>
+		<button class="examples-btn" onclick={() => (examplesOpen = true)}>
+			Need some examples?
+		</button>
 		{#if weekTotal > 0}
 			<div class="week-badge" transition:fly={{ x: 6, duration: 200 }}>
 				{toUnit(weekTotal, unit)}<span class="week-unit">{UNIT_SHORT[unit]}</span>
@@ -119,9 +133,26 @@
 		padding: 0.05em 0.3em;
 	}
 
-	.week-badge {
+	.examples-btn {
 		margin-top: auto;
-		padding-top: 0.5rem;
+		align-self: flex-start;
+		background: rgba(0, 0, 0, 0.1);
+		color: var(--cat-text);
+		font-size: 0.68rem;
+		font-weight: 600;
+		padding: 0.2rem 0.55rem;
+		border-radius: 999px;
+		opacity: 0.8;
+		transition: opacity 0.15s, background 0.15s;
+	}
+
+	.examples-btn:hover {
+		opacity: 1;
+		background: rgba(0, 0, 0, 0.2);
+	}
+
+	.week-badge {
+		margin-top: 0.25rem;
 		width: fit-content;
 		background: rgba(0, 0, 0, 0.12);
 		border-radius: 999px;

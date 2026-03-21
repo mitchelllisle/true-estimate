@@ -8,7 +8,7 @@
 		onclose
 	}: {
 		baseCategories: Category[];
-		onimport: (categories: Category[]) => void;
+		onimport: (categories: Category[], filename: string) => void;
 		onclose: () => void;
 	} = $props();
 
@@ -58,7 +58,7 @@
 	}
 
 	function confirmImport() {
-		if (result) onimport(result.categories);
+		if (result) onimport(result.categories, fileName);
 	}
 
 	function downloadTemplate() {
