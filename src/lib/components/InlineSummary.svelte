@@ -1,18 +1,35 @@
 <script lang="ts">
 	import type { Category } from '$lib/categories';
-	import { coreWeeks, hiddenWeeks, totalWeeks, type Unit, toUnit, UNIT_SHORT } from '$lib/categories';
+	import { coreWeeks, hiddenWeeks, totalWeeks, type Unit, toUnit, UNIT_SHORT, buildCsv } from '$lib/categories';
 
 	let {
 		categories,
 		unit = 'weeks' as Unit,
 		showBreakdown = false,
-		onOpenModal
+		projectName = 'project',
+		onOpenModal,
+		onUpload
 	}: {
 		categories: Category[];
 		unit?: Unit;
 		showBreakdown?: boolean;
+		projectName?: string;
 		onOpenModal: () => void;
+		onUpload: () => void;
 	} = $props();
+
+	function downloadCsv() {
+		const csv = buildCsv(categories);
+		const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement('a');
+		a.href = url;
+		const date = new Date().toISOString().slice(0, 10);
+		const safeName = projectName.trim().replace(/[^a-zA-Z0-9_-]/g, '-') || 'project';
+		a.download = `${safeName}-${date}.csv`;
+		a.click();
+		URL.revokeObjectURL(url);
+	}
 
 	const core    = $derived(coreWeeks(categories));
 	const hidden  = $derived(hiddenWeeks(categories));
@@ -76,9 +93,19 @@
 		</div>
 
 		<!-- CTA -->
-		<button class="breakdown-btn" onclick={onOpenModal} disabled={!showBreakdown && total === 0}>
-			{#if showBreakdown}← Back to Builder{:else}See breakdown →{/if}
-		</button>
+		<div class="actions">
+			<button class="icon-btn upload-btn" onclick={onUpload} title="Upload CSV" aria-label="Upload CSV">
+				<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+				Upload
+			</button>
+			<button class="icon-btn download-btn" onclick={downloadCsv} disabled={total === 0} title="Download CSV" aria-label="Download CSV">
+				<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+				Download
+			</button>
+			<button class="breakdown-btn" onclick={onOpenModal} disabled={!showBreakdown && total === 0}>
+				{#if showBreakdown}← Back to Builder{:else}See breakdown →{/if}
+			</button>
+		</div>
 	</div>
 </div>
 
@@ -98,7 +125,7 @@
 	}
 
 	.bar-inner {
-		max-width: 900px;
+		max-width: 1400px;
 		margin: 0 auto;
 		padding: 0 1.25rem;
 		height: 100%;
@@ -187,6 +214,59 @@
 	}
 
 	/* CTA */
+	.actions {
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+		flex-shrink: 0;
+	}
+
+	.icon-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.3rem;
+		border: 1.5px solid transparent;
+		border-radius: var(--radius-sm);
+		padding: 0.4rem 0.65rem;
+		font: inherit;
+		font-size: 0.78rem;
+		font-weight: 600;
+		cursor: pointer;
+		transition: background 0.15s, opacity 0.15s;
+		flex-shrink: 0;
+		white-space: nowrap;
+	}
+
+	.upload-btn {
+		background: #eff6ff;
+		color: #1d4ed8;
+		border-color: #bfdbfe;
+	}
+	.upload-btn:hover { background: #dbeafe; }
+
+	.download-btn {
+		background: #f0fdf4;
+		color: #15803d;
+		border-color: #bbf7d0;
+	}
+	.download-btn:hover:not(:disabled) { background: #dcfce7; }
+	.download-btn:disabled { opacity: 0.35; cursor: default; }
+
+	:global([data-theme="dark"]) .upload-btn {
+		background: rgba(29,78,216,0.18);
+		color: #93c5fd;
+		border-color: rgba(29,78,216,0.35);
+	}
+	:global([data-theme="dark"]) .upload-btn:hover { background: rgba(29,78,216,0.28); }
+
+	:global([data-theme="dark"]) .download-btn {
+		background: rgba(21,128,61,0.18);
+		color: #86efac;
+		border-color: rgba(21,128,61,0.35);
+	}
+	:global([data-theme="dark"]) .download-btn:hover:not(:disabled) { background: rgba(21,128,61,0.28); }
+
 	.breakdown-btn {
 		flex-shrink: 0;
 		background: var(--text);

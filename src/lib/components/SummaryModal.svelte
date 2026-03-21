@@ -321,11 +321,6 @@
 		<div class="inline-body">
 			{@render bodyContent()}
 		</div>
-		<footer class="inline-footer">
-			<button class="csv-btn" onclick={downloadCsv} disabled={total === 0}>
-				⬇ Download CSV
-			</button>
-		</footer>
 	</div>
 {:else}
 	<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->

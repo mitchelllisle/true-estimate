@@ -166,7 +166,7 @@
 			</span>
 			or <button class="pill-btn" onclick={() => (importOpen = true)}>Upload a CSV</button>.
 		</div>
-		<p class="privacy privacy--hero">🔒 Nothing you enter here is stored, sent, or collected. All data exists only in your browser's memory and disappears when you close or refresh the page.</p>
+		<p class="privacy privacy--hero">🔐 Nothing you enter here is stored, sent, or collected. All data exists only in your browser's memory and disappears when you close or refresh the page.</p>
 		<div class="project-name-row">
 			<label class="project-name-label" for="project-name">Project</label>
 			<input
@@ -183,17 +183,23 @@
 				title="Generate a new name"
 				aria-label="Generate new project name"
 			>⚄</button>
+			<span class="project-row-spacer"></span>
+			<div class="view-controls">
+				<span class="view-controls-label">Descriptions</span>
+				<button class="view-ctrl-btn" onclick={() => setGlobalNotes(true)} disabled={allNotesOpen}>Expand all</button>
+				<span class="view-ctrl-sep">·</span>
+				<button class="view-ctrl-btn" onclick={() => setGlobalNotes(false)} disabled={!allNotesOpen}>Collapse all</button>
+			</div>
+			<div class="view-controls">
+				<span class="view-controls-label">Sections</span>
+				<button class="view-ctrl-btn" onclick={() => { openBefore = true; openCore = true; openAfter = true; }} disabled={openBefore && openCore && openAfter}>Expand all</button>
+				<span class="view-ctrl-sep">·</span>
+				<button class="view-ctrl-btn" onclick={() => { openBefore = false; openCore = false; openAfter = false; }} disabled={!openBefore && !openCore && !openAfter}>Collapse all</button>
+			</div>
 		</div>
 	</header>
 
 	<main class="content">
-		<div class="view-controls">
-			<span class="view-controls-label">Descriptions</span>
-			<button class="view-ctrl-btn" onclick={() => setGlobalNotes(true)} disabled={allNotesOpen}>Expand all</button>
-			<span class="view-ctrl-sep">·</span>
-			<button class="view-ctrl-btn" onclick={() => setGlobalNotes(false)} disabled={!allNotesOpen}>Collapse all</button>
-		</div>
-
 		<!-- ── Before the work ─────────────────────────────────── -->
 		<section class="scope scope--before">
 			<button
@@ -317,7 +323,7 @@
 	<SummaryModal {categories} {unit} {projectName} inline onunitchange={(u) => (unit = u)} />
 {/if}
 
-<InlineSummary {categories} {unit} {showBreakdown} onOpenModal={() => (showBreakdown = !showBreakdown)} />
+<InlineSummary {categories} {unit} {showBreakdown} {projectName} onOpenModal={() => (showBreakdown = !showBreakdown)} onUpload={() => (importOpen = true)} />
 
 {#if importOpen}
 	<ImportModal
@@ -415,6 +421,11 @@
 		align-items: center;
 		gap: 0.5rem;
 		margin-top: 1.25rem;
+		flex-wrap: wrap;
+	}
+
+	.project-row-spacer {
+		flex: 1;
 	}
 
 	.project-name-label {
@@ -607,7 +618,6 @@
 	.view-controls {
 		display: flex;
 		align-items: center;
-		justify-content: flex-end;
 		gap: 0.4rem;
 		font-size: 0.75rem;
 		color: var(--text-muted);
@@ -820,9 +830,17 @@
 	.privacy--hero {
 		margin-top: 0.6rem;
 		padding: 0.45rem 0.75rem;
-		background: var(--tally-bg);
+		background: rgba(99, 102, 241, 0.08);
+		border: 1px solid rgba(99, 102, 241, 0.25);
+		color: #4f46e5;
 		border-radius: var(--radius-sm);
 		line-height: 1.5;
+	}
+
+	:global([data-theme="dark"]) .privacy--hero {
+		background: rgba(129, 140, 248, 0.1);
+		border-color: rgba(129, 140, 248, 0.25);
+		color: #a5b4fc;
 	}
 
 	.theme-toggle {
