@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import type { Category, Item } from '$lib/categories';
 	import { type Unit, toUnit, UNIT_SHORT, UNIT_MULTIPLIERS } from '$lib/categories';
 
@@ -50,9 +51,12 @@
 				.map((b) => b.id)
 		);
 
+		// Read expandedBars without tracking it to avoid a reactive cycle
+		const current = untrack(() => expandedBars);
+
 		// Start with previously expanded bars that still exist
 		const next = new Set<string>();
-		for (const id of expandedBars) {
+		for (const id of current) {
 			if (allIds.has(id)) {
 				next.add(id);
 			}

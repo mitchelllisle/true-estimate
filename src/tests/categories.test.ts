@@ -100,7 +100,7 @@ describe('week helper functions', () => {
 describe('buildCsv()', () => {
 	it('includes a header row', () => {
 		const csv = buildCsv(initialCategories());
-		expect(csv.startsWith('Category,Subtitle,Item,Weeks')).toBe(true);
+		expect(csv.startsWith('Category,Subtitle,Item,Notes,Weeks')).toBe(true);
 	});
 
 	it('produces only the header when no items exist', () => {
