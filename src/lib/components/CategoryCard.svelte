@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { fly } from 'svelte/transition';
 	import type { Category, Item } from '$lib/categories';
-	import { type Unit, toUnit, UNIT_SHORT } from '$lib/categories';
+	import { type Unit, toUnit, UNIT_SHORT, itemEffectiveWeeks } from '$lib/categories';
 	import ItemRow from './ItemRow.svelte';
 
 	let {
@@ -19,7 +19,7 @@
 	} = $props();
 
 	const weekTotal = $derived(
-		category.items.reduce((sum, i) => sum + (i.weeks ?? 0), 0)
+		category.items.reduce((sum, i) => sum + itemEffectiveWeeks(i), 0)
 	);
 
 	function parseDescription(text: string): { content: string; isCode: boolean }[] {
@@ -46,6 +46,14 @@
 
 	<!-- Right: items panel -->
 	<div class="card-body">
+		{#if category.items.length > 0}
+			<div class="col-headings" aria-hidden="true">
+				<span class="col-heading-desc"></span>
+				<span class="col-heading">Effort</span>
+				<span class="col-heading">Headcount</span>
+				<span class="col-heading-remove"></span>
+			</div>
+		{/if}
 		<div class="items">
 			{#each category.items as item (item.id)}
 				<div transition:fly={{ y: -5, duration: 180 }}>
@@ -144,6 +152,37 @@
 		padding: 0.55rem 1rem 0.7rem;
 		display: flex;
 		flex-direction: column;
+	}
+
+	.col-headings {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		padding: 0 0 0.2rem;
+		border-bottom: 1px solid var(--border);
+		margin-bottom: 0.15rem;
+	}
+
+	.col-heading-desc {
+		flex: 1;
+		min-width: 0;
+	}
+
+	.col-heading {
+		width: 5.5rem;
+		text-align: center;
+		font-size: 0.62rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.07em;
+		color: var(--text-muted);
+		flex-shrink: 0;
+	}
+
+	/* match the remove button width in ItemRow */
+	.col-heading-remove {
+		width: 1.75rem;
+		flex-shrink: 0;
 	}
 
 	.items {

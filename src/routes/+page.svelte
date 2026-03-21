@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { slide } from 'svelte/transition';
-	import { initialCategories, sampleCategories, generateProjectName, type SampleProject, type Unit, UNITS, UNIT_LABELS, UNIT_SHORT, toUnit } from '$lib/categories';
+	import { initialCategories, sampleCategories, generateProjectName, type SampleProject, type Unit, UNITS, UNIT_LABELS, UNIT_SHORT, toUnit, itemEffectiveWeeks } from '$lib/categories';
 	import type { Item } from '$lib/categories';
 	import CategoryCard from '$lib/components/CategoryCard.svelte';
 	import InlineSummary from '$lib/components/InlineSummary.svelte';
@@ -36,7 +36,7 @@
 						...c,
 						items: [
 							...c.items,
-							{ id: crypto.randomUUID(), description: '', weeks: null }
+							{ id: crypto.randomUUID(), description: '', weeks: null, headcount: 1 }
 						]
 					}
 				: c
@@ -65,7 +65,7 @@
 	const afterCats  = $derived(categories.filter((c) => c.id === 'after'));
 
 	function scopeTotal(cats: typeof categories): number {
-		const weeks = cats.flatMap((c) => c.items).reduce((sum, i) => sum + (i.weeks ?? 0), 0);
+		const weeks = cats.flatMap((c) => c.items).reduce((sum, i) => sum + itemEffectiveWeeks(i), 0);
 		return toUnit(weeks, unit);
 	}
 
@@ -73,8 +73,8 @@
 	const coreTotal   = $derived(scopeTotal(coreCats));
 	const afterTotal  = $derived(scopeTotal(afterCats));
 
-	const coreExecWeeks     = $derived(coreCats.filter(c => c.isCore).flatMap(c => c.items).reduce((s, i) => s + (i.weeks ?? 0), 0));
-	const coreSurroundWeeks = $derived(coreCats.filter(c => !c.isCore).flatMap(c => c.items).reduce((s, i) => s + (i.weeks ?? 0), 0));
+	const coreExecWeeks     = $derived(coreCats.filter(c => c.isCore).flatMap(c => c.items).reduce((s, i) => s + itemEffectiveWeeks(i), 0));
+	const coreSurroundWeeks = $derived(coreCats.filter(c => !c.isCore).flatMap(c => c.items).reduce((s, i) => s + itemEffectiveWeeks(i), 0));
 	const uCoreExec     = $derived(toUnit(coreExecWeeks, unit));
 	const uCoreSurround = $derived(toUnit(coreSurroundWeeks, unit));
 

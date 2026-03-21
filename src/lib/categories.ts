@@ -2,7 +2,14 @@ export type Item = {
 	id: string;
 	description: string;
 	weeks: number | null;
+	/** Number of people working on this item in parallel; divides the effort contribution. Defaults to 1. */
+	headcount?: number;
 };
+
+/** Effective weeks this item contributes to the total, accounting for parallel headcount. */
+export function itemEffectiveWeeks(item: Item): number {
+	return (item.weeks ?? 0) / Math.max(1, item.headcount ?? 1);
+}
 
 const PROJECT_ACTIONS = [
 	'Flying', 'Leaping', 'Charging', 'Dancing', 'Prowling', 'Howling', 'Gliding',
@@ -59,7 +66,7 @@ export const CATEGORIES: Omit<Category, 'items'>[] = [
 		id: 'before',
 		name: 'The work before the work',
 		subtitle: 'Preparation',
-		description: 'Configuration, setup, services, infrastructure.',
+		description: 'Configuration, setup, services, infrastructure, hiring and onboarding.',
 		color: '#f4a460',
 		textColor: '#5a2d00',
 		isCore: false,
@@ -126,14 +133,14 @@ export function initialCategories(): Category[] {
 }
 
 export function totalWeeks(categories: Category[]): number {
-	return categories.flatMap((c) => c.items).reduce((sum, i) => sum + (i.weeks ?? 0), 0);
+	return categories.flatMap((c) => c.items).reduce((sum, i) => sum + itemEffectiveWeeks(i), 0);
 }
 
 export function coreWeeks(categories: Category[]): number {
 	return categories
 		.filter((c) => c.isCore)
 		.flatMap((c) => c.items)
-		.reduce((sum, i) => sum + (i.weeks ?? 0), 0);
+		.reduce((sum, i) => sum + itemEffectiveWeeks(i), 0);
 }
 
 export type SampleProject = 'backend' | 'frontend' | 'data';
@@ -295,7 +302,7 @@ export function hiddenWeeks(categories: Category[]): number {
 /** Shared calculation kernel: returns elapsed-week positions, mirroring GanttChart logic */
 function timelinePositions(cats: Category[]) {
 	const eff = (id: string) =>
-		cats.find((c) => c.id === id)?.items.reduce((s, i) => s + (i.weeks ?? 0), 0) ?? 0;
+		cats.find((c) => c.id === id)?.items.reduce((s, i) => s + itemEffectiveWeeks(i), 0) ?? 0;
 
 	const acq  = eff('to-get');
 	const prep = eff('before');
@@ -361,13 +368,13 @@ export function getElapsedBreakdown(cats: Category[]): ElapsedEntry[] {
 
 	return entries;
 
-	function eff(id: string) { return cats.find((c) => c.id === id)?.items.reduce((s, i) => s + (i.weeks ?? 0), 0) ?? 0; }
+	function eff(id: string) { return cats.find((c) => c.id === id)?.items.reduce((s, i) => s + itemEffectiveWeeks(i), 0) ?? 0; }
 }
 
 // ── Unit system ────────────────────────────────────────────────────
 export type Unit = 'weeks' | 'days' | 'months' | 'sprints';
 
-// ── Risk assessment ────────────────────────────────────────────────
+// ── Accuracy signal ───────────────────────────────────────────────
 
 export type RiskLevel = 'low' | 'medium' | 'high';
 
@@ -396,8 +403,8 @@ export function getRiskAssessment(categories: Category[]): RiskAssessment | null
 		.map((c) => ({
 			name: c.name,
 			subtitle: c.subtitle,
-			weeks: c.items.reduce((s, i) => s + (i.weeks ?? 0), 0),
-			pct: Math.round((c.items.reduce((s, i) => s + (i.weeks ?? 0), 0) / total) * 100),
+			weeks: c.items.reduce((s, i) => s + itemEffectiveWeeks(i), 0),
+			pct: Math.round((c.items.reduce((s, i) => s + itemEffectiveWeeks(i), 0) / total) * 100),
 		}))
 		.filter((c) => c.weeks > 0)
 		.sort((a, b) => b.weeks - a.weeks);
@@ -412,23 +419,20 @@ export function getRiskAssessment(categories: Category[]): RiskAssessment | null
 
 	if (underestimationPct < 35) {
 		level = 'low';
-		headline = 'Low probability of overrun — core effort closely reflects the true total';
-		explanation = `A core-only quote would miss about ${underestimationPct}% of the actual work. `
-			+ `Non-core activities${nonCoreCats.length > 0 ? ` (${topNames})` : ''} are modest relative to the deliverable. `
-			+ `The chance of a significant blowout from unquoted work is low.`;
+		headline = 'Your estimate is highly accurate — very little hidden work found';
+		explanation = `The non-core work${nonCoreCats.length > 0 ? ` (${topNames})` : ''} makes up only ${underestimationPct}% of the total. `
+			+ `A core-only quote would have been close — but you've still captured the full picture here.`;
 	} else if (underestimationPct < 60) {
 		level = 'medium';
-		headline = 'Medium probability of overrun — non-core effort is material';
-		explanation = `A core-only quote would underestimate the true total by about ${underestimationPct}%. `
-			+ `The main contributors are ${topNames}. `
-			+ `There is a meaningful chance of cost overruns if these categories aren't surfaced in the quote.`;
+		headline = 'Solid catch — you\'ve surfaced work a core-only quote would have missed';
+		explanation = `By accounting for the non-core effort, this estimate is ${underestimationPct}% more complete than a deliverable-only quote. `
+			+ `The hidden work (${topNames}) represents real time that would have gone unquoted without this breakdown.`;
 	} else {
 		level = 'high';
-		headline = 'High probability of overrun — surrounding work matches or exceeds the core';
-		explanation = `A core-only quote would miss ${underestimationPct}% of the actual work — `
-			+ `meaning the surrounding work is as large as (or larger than) the deliverable itself. `
-			+ `The primary contributors are ${topNames}. `
-			+ `Without quoting the full picture, cost overruns are highly likely.`;
+		headline = 'Major accuracy win — the surrounding work is as large as the core itself';
+		explanation = `A core-only quote would have captured only ${100 - underestimationPct}% of the actual effort. `
+			+ `This estimate is ${underestimationPct}% more complete because it includes ${topNames} — `
+			+ `work that almost always gets missed when quoting only the deliverable.`;
 	}
 
 	return { level, underestimationPct, drivers, headline, explanation };
@@ -449,12 +453,13 @@ export function fromUnit(enteredValue: number, unit: Unit): number {
 }
 
 export function buildCsv(categories: Category[]): string {
-	const rows: string[] = ['Category,Subtitle,Item,Weeks'];
+	const rows: string[] = ['Category,Subtitle,Item,Weeks,Headcount'];
 	for (const cat of categories) {
 		for (const item of cat.items) {
 			const weeks = item.weeks != null ? String(item.weeks) : '';
+			const headcount = String(item.headcount ?? 1);
 			const desc = `"${item.description.replace(/"/g, '""')}"`;
-			rows.push(`"${cat.name}",${cat.subtitle},${desc},${weeks}`);
+			rows.push(`"${cat.name}",${cat.subtitle},${desc},${weeks},${headcount}`);
 		}
 	}
 	return rows.join('\n');
@@ -497,10 +502,11 @@ export function parseCsvImport(csv: string, base: Category[]): ImportResult {
 	}
 
 	const header = parseCsvRow(lines[0]).map(h => h.toLowerCase().trim());
-	const colCategory = header.indexOf('category');
-	const colSubtitle = header.indexOf('subtitle');
-	const colItem     = header.indexOf('item');
-	const colWeeks    = header.indexOf('weeks');
+	const colCategory  = header.indexOf('category');
+	const colSubtitle  = header.indexOf('subtitle');
+	const colItem      = header.indexOf('item');
+	const colWeeks     = header.indexOf('weeks');
+	const colHeadcount = header.indexOf('headcount');
 
 	const errors: ImportError[] = [];
 
@@ -540,10 +546,13 @@ export function parseCsvImport(csv: string, base: Category[]): ImportResult {
 		}
 
 		const weeks = weeksRaw !== '' ? parseFloat(weeksRaw) : null;
+		const hcRaw = (colHeadcount !== -1 ? cols[colHeadcount] : '')?.trim() ?? '';
+		const hc    = hcRaw !== '' ? parseInt(hcRaw, 10) : 1;
 		cat.items.push({
 			id:          crypto.randomUUID(),
 			description: item,
 			weeks:       (weeks != null && !isNaN(weeks)) ? weeks : null,
+			headcount:   (hc > 0 && !isNaN(hc)) ? hc : 1,
 		});
 		imported++;
 	}

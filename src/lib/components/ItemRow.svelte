@@ -67,6 +67,24 @@
 			aria-label="{UNIT_SHORT[unit]} estimate (optional)"
 		/>
 	</label>
+	<label class="headcount-label" title="People working on this in parallel — divides the effort">
+		<span class="sr-only">Headcount</span>
+		<span class="headcount-icon" aria-hidden="true">👤</span>
+		<input
+			type="number"
+			class="headcount"
+			class:headcount--multi={(item.headcount ?? 1) > 1}
+			min="1"
+			step="1"
+			placeholder="1"
+			value={item.headcount != null && item.headcount !== 1 ? item.headcount : ''}
+			oninput={(e) => {
+				const raw = parseInt((e.target as HTMLInputElement).value, 10);
+				onupdate(item.id, { headcount: raw >= 2 ? raw : undefined });
+			}}
+			aria-label="Number of people working on this item"
+		/>
+	</label>
 	<button
 		class="remove"
 		onclick={() => onremove(item.id)}
@@ -120,6 +138,32 @@
 
 	.weeks-label {
 		display: contents;
+	}
+
+	.headcount-label {
+		display: flex;
+		align-items: center;
+		gap: 0.15rem;
+		flex-shrink: 0;
+	}
+
+	.headcount-icon {
+		font-size: 0.8rem;
+		opacity: 0.45;
+		line-height: 1;
+	}
+
+	.headcount {
+		width: 3rem !important;
+		text-align: center !important;
+		color: var(--text-muted);
+		padding: 0.4rem 0.25rem !important;
+	}
+
+	.headcount--multi {
+		color: var(--text) !important;
+		font-weight: 600;
+		border-color: var(--border-focus) !important;
 	}
 
 	.remove {

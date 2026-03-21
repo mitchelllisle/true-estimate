@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Category } from '$lib/categories';
-	import { coreWeeks, hiddenWeeks, totalWeeks, type Unit, toUnit, UNIT_SHORT } from '$lib/categories';
+	import { coreWeeks, hiddenWeeks, totalWeeks, type Unit, toUnit, UNIT_SHORT, itemEffectiveWeeks } from '$lib/categories';
 
 	let {
 		categories,

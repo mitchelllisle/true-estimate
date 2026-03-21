@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { fade, fly } from 'svelte/transition';
 	import type { Category } from '$lib/categories';
-	import { buildCsv, coreWeeks, totalWeeks, getCalendarWeeks, getElapsedBreakdown, getRiskAssessment, type Unit, toUnit, UNIT_LABELS, UNIT_SHORT } from '$lib/categories';
+	import { buildCsv, coreWeeks, totalWeeks, getCalendarWeeks, getElapsedBreakdown, getRiskAssessment, type Unit, toUnit, UNIT_LABELS, UNIT_SHORT, itemEffectiveWeeks } from '$lib/categories';
 	import GanttChart from './GanttChart.svelte';
 
 	let {
@@ -51,7 +51,7 @@
 		categories
 			.filter((c) => c.items.length > 0)
 			.map((c) => {
-				const effortWeeks = c.items.reduce((s, i) => s + (i.weeks ?? 0), 0);
+				const effortWeeks = c.items.reduce((s, i) => s + itemEffectiveWeeks(i), 0);
 				const elapsedEntry = elapsed.find((e) => e.id === c.id);
 				return {
 					...c,
@@ -109,14 +109,14 @@
 			{#if risk}
 				<div class="risk-banner risk--{risk.level}">
 					<div class="risk-header">
-						<span class="risk-badge">{risk.level.charAt(0).toUpperCase() + risk.level.slice(1)} Probability</span>
+						<span class="risk-badge">{risk.level === 'low' ? 'Accurate' : risk.level === 'medium' ? 'More Complete' : 'Much More Complete'}</span>
 						<span class="risk-headline">{risk.headline}</span>
-						<span class="risk-miss">Core-only quote misses <strong>~{risk.underestimationPct}%</strong> of total effort</span>
+						<span class="risk-miss">Non-core work is <strong>~{risk.underestimationPct}%</strong> of total effort</span>
 					</div>
 					<p class="risk-explanation">{risk.explanation}</p>
 					{#if risk.drivers.length > 0}
 						<div class="risk-drivers">
-							<span class="risk-drivers-label">Top drivers:</span>
+							<span class="risk-drivers-label">Hidden work found:</span>
 							{#each risk.drivers as d}
 								<span class="risk-driver-pill">{d.subtitle} <span class="driver-pct">{d.pct}%</span></span>
 							{/each}
@@ -273,16 +273,26 @@
 								<div class="cat-group-header" style="background: {cat.color}; color: {cat.textColor};">
 									<span>{cat.name}</span>
 									<span class="cat-group-weeks">
-										{toUnit(cat.items.reduce((s, i) => s + (i.weeks ?? 0), 0), unit)}{uShort}
+										{toUnit(cat.items.reduce((s, i) => s + itemEffectiveWeeks(i), 0), unit)}{uShort}
 									</span>
 								</div>
 								<ul>
 									{#each cat.items as item}
+										{@const hc = item.headcount ?? 1}
+										{@const rawDisplay = item.weeks != null ? toUnit(item.weeks, unit) + uShort : null}
+										{@const effDisplay = item.weeks != null ? toUnit(itemEffectiveWeeks(item), unit) + uShort : null}
 										<li>
 											<span class="item-desc">{item.description || '(no description)'}</span>
-											<span class="item-weeks">
-												{item.weeks != null ? toUnit(item.weeks, unit) + uShort : 'no estimate'}
-											</span>
+											{#if hc > 1 && rawDisplay}
+												<span class="item-calc">
+													<span class="item-raw">{rawDisplay}</span>
+													<span class="item-calc-op">÷ {hc} 👤</span>
+													<span class="item-calc-eq">=</span>
+													<span class="item-weeks">{effDisplay}</span>
+												</span>
+											{:else}
+												<span class="item-weeks">{rawDisplay ?? 'no estimate'}</span>
+											{/if}
 										</li>
 									{/each}
 								</ul>
@@ -532,7 +542,7 @@
 	}
 
 	/* level-specific colours */
-	/* low = blue */
+	/* low = light blue */
 	.risk--low {
 		background: #eff6ff;
 		color: #1e40af;
@@ -540,32 +550,32 @@
 	.risk--low .risk-badge { background: #bfdbfe; color: #1e3a8a; }
 	.risk--low .risk-driver-pill { color: #1d4ed8; }
 
-	/* medium = orange */
+	/* medium = teal */
 	.risk--medium {
-		background: #fff7ed;
-		color: #9a3412;
+		background: #f0fdfa;
+		color: #0f766e;
 	}
-	.risk--medium .risk-badge { background: #fed7aa; color: #7c2d12; }
-	.risk--medium .risk-driver-pill { color: #c2410c; }
+	.risk--medium .risk-badge { background: #99f6e4; color: #134e4a; }
+	.risk--medium .risk-driver-pill { color: #0d9488; }
 
-	/* high = red/pink */
+	/* high = green */
 	.risk--high {
-		background: #fef2f2;
-		color: #991b1b;
+		background: #f0fdf4;
+		color: #166534;
 	}
-	.risk--high .risk-badge { background: #fecaca; color: #7f1d1d; }
-	.risk--high .risk-driver-pill { color: #dc2626; }
+	.risk--high .risk-badge { background: #bbf7d0; color: #14532d; }
+	.risk--high .risk-driver-pill { color: #15803d; }
 
 	/* Dark mode overrides */
 	:global([data-theme="dark"]) .risk--low    { background: rgba(30,80,200,0.12); color: #93c5fd; }
 	:global([data-theme="dark"]) .risk--low .risk-badge { background: rgba(30,80,200,0.28); color: #bfdbfe; }
 	:global([data-theme="dark"]) .risk--low .risk-driver-pill { color: #93c5fd; }
-	:global([data-theme="dark"]) .risk--medium { background: rgba(200,80,20,0.16); color: #fdba74; }
-	:global([data-theme="dark"]) .risk--medium .risk-badge { background: rgba(200,80,20,0.32); color: #fed7aa; }
-	:global([data-theme="dark"]) .risk--medium .risk-driver-pill { color: #fdba74; }
-	:global([data-theme="dark"]) .risk--high { background: rgba(220,20,50,0.24); color: #fc3b6e; }
-	:global([data-theme="dark"]) .risk--high .risk-badge { background: rgba(220,20,50,0.44); color: #fd7598; }
-	:global([data-theme="dark"]) .risk--high .risk-driver-pill { color: #fc3b6e; }
+	:global([data-theme="dark"]) .risk--medium { background: rgba(15,118,110,0.14); color: #5eead4; }
+	:global([data-theme="dark"]) .risk--medium .risk-badge { background: rgba(15,118,110,0.30); color: #99f6e4; }
+	:global([data-theme="dark"]) .risk--medium .risk-driver-pill { color: #5eead4; }
+	:global([data-theme="dark"]) .risk--high { background: rgba(22,101,52,0.16); color: #86efac; }
+	:global([data-theme="dark"]) .risk--high .risk-badge { background: rgba(22,101,52,0.32); color: #bbf7d0; }
+	:global([data-theme="dark"]) .risk--high .risk-driver-pill { color: #86efac; }
 
 	/* Sections */
 	.gantt-section,
@@ -748,6 +758,50 @@
 	.cat-group li:last-child { border-bottom: none; }
 
 	.item-desc { flex: 1; min-width: 0; }
+
+	.item-calc {
+		display: flex;
+		align-items: center;
+		gap: 0.3rem;
+		flex-shrink: 0;
+		font-variant-numeric: tabular-nums;
+		font-size: 0.78rem;
+	}
+
+	.item-raw {
+		text-decoration: line-through;
+		color: var(--text-muted);
+		opacity: 0.7;
+	}
+
+	.item-calc-op {
+		color: #4f46e5;
+		font-size: 0.72rem;
+		font-weight: 600;
+	}
+
+	.item-calc-eq {
+		color: var(--text-muted);
+		font-size: 0.72rem;
+	}
+
+	.item-people-badge {
+		flex-shrink: 0;
+		font-size: 0.7rem;
+		padding: 0.1rem 0.4rem;
+		border-radius: 999px;
+		background: rgba(99,102,241,0.1);
+		color: #4f46e5;
+		font-weight: 600;
+		white-space: nowrap;
+	}
+	:global([data-theme="dark"]) .item-people-badge {
+		background: rgba(129,140,248,0.15);
+		color: #a5b4fc;
+	}
+	:global([data-theme="dark"]) .item-calc-op {
+		color: #a5b4fc;
+	}
 	.item-weeks {
 		flex-shrink: 0;
 		font-variant-numeric: tabular-nums;

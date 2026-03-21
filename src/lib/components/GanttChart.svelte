@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Category } from '$lib/categories';
-	import { type Unit, toUnit, UNIT_SHORT } from '$lib/categories';
+	import { type Unit, toUnit, UNIT_SHORT, itemEffectiveWeeks } from '$lib/categories';
 
 	let {
 		categories,
@@ -17,6 +17,7 @@
 		color: string;
 		textColor: string;
 		effortWeeks: number;
+		headcount: number;
 		startPct: number;
 		widthPct: number;
 		note: string;
@@ -36,7 +37,11 @@
 
 	function buildChart(cats: Category[]): ChartData | null {
 		const eff = (id: string) =>
-			cats.find((c) => c.id === id)?.items.reduce((s, i) => s + (i.weeks ?? 0), 0) ?? 0;
+			cats.find((c) => c.id === id)?.items.reduce((s, i) => s + itemEffectiveWeeks(i), 0) ?? 0;
+
+		/** Sum of headcount for all items in a category (capped at 1 per item minimum) */
+		const hc = (id: string) =>
+			cats.find((c) => c.id === id)?.items.reduce((s, i) => s + Math.max(1, i.headcount ?? 1), 0) ?? 0;
 
 		const acq  = eff('to-get');   // Acquisition (pre-project)
 		const prep = eff('before');   // Preparation
@@ -119,6 +124,7 @@
 				color:       cat.color,
 				textColor:   cat.textColor,
 				effortWeeks: eff(id),
+				headcount:   hc(id),
 				startPct:    pct(s),
 				widthPct:    widthPct(s, e),
 				note,
@@ -206,9 +212,9 @@
 							class="bar"
 							class:bar--preproject={bar.isPreProject}
 							class:bar--fullspan={bar.isFullSpan}						class:bar--spread={bar.isSpread}							style="left: {bar.startPct}%; width: {bar.widthPct}%; background: {bar.color}; color: {bar.textColor};"
-							title="{bar.name} — {bar.effortWeeks}w effort"
+							title="{bar.name} — {toUnit(bar.effortWeeks, unit)}{UNIT_SHORT[unit]} effort{bar.headcount > 1 ? ", 👤 " + bar.headcount + " people" : ""}"
 						>
-							<span class="bar-text">{toUnit(bar.effortWeeks, unit)}{UNIT_SHORT[unit]}</span>
+							<span class="bar-text">{toUnit(bar.effortWeeks, unit)}{UNIT_SHORT[unit]}{#if bar.headcount > 1} <span class="bar-hc">👤{bar.headcount}</span>{/if}</span>
 						</div>
 					</div>
 				</div>
@@ -440,6 +446,14 @@
 		white-space: nowrap;
 		overflow: hidden;
 		pointer-events: none;
+		display: flex;
+		align-items: center;
+		gap: 0.15rem;
+	}
+
+	.bar-hc {
+		font-size: 0.6rem;
+		opacity: 0.85;
 	}
 
 	/* ── Empty state ─────────────────────────────────── */
