@@ -25,7 +25,7 @@ export const CATEGORIES: Omit<Category, 'items'>[] = [
 		color: '#c8c8c8',
 		textColor: '#333333',
 		isCore: false,
-		outsideProject: false
+		outsideProject: true
 	},
 	{
 		id: 'to-get',
