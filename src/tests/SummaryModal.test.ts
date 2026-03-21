@@ -18,28 +18,28 @@ describe('SummaryModal', () => {
 		expect(screen.getByText('Project breakdown')).toBeInTheDocument();
 	});
 
-	it('renders a table row for each of the 8 categories', () => {
-		render(SummaryModal, { categories: initialCategories(), onclose: () => {} });
-		// Each category name appears in the table
-		expect(screen.getByText('The work')).toBeInTheDocument();
-		expect(screen.getByText('The work before the work')).toBeInTheDocument();
-		expect(screen.getByText('The work after the work')).toBeInTheDocument();
+	it('renders a table row for categories that have items', () => {
+		render(SummaryModal, { categories: categoriesWithData(), onclose: () => {} });
+		// Only categories with items appear in the breakdown table
+		expect(screen.getAllByText('The work').length).toBeGreaterThan(0);
+		expect(screen.getAllByText('The work before the work').length).toBeGreaterThan(0);
 	});
 
 	it('shows a Total row', () => {
-		render(SummaryModal, { categories: initialCategories(), onclose: () => {} });
+		render(SummaryModal, { categories: categoriesWithData(), onclose: () => {} });
 		expect(screen.getByText('Total')).toBeInTheDocument();
 	});
 
-	it('renders the callout with core week count when core > 0', () => {
+	it('renders the stats strip with core execution when core > 0', () => {
 		render(SummaryModal, { categories: categoriesWithData(), onclose: () => {} });
-		expect(screen.getByText(/You estimated 4 weeks/i)).toBeInTheDocument();
+		// Stats strip shows core execution % when pctCore > 0
+		expect(screen.getByText('core execution')).toBeInTheDocument();
 	});
 
-	it('shows the projected range in the callout', () => {
+	it('shows calendar time in the stats strip', () => {
 		render(SummaryModal, { categories: categoriesWithData(), onclose: () => {} });
-		// projLow = 4 * 3.5 = 14, projHigh = 4 * 5 = 20
-		expect(screen.getByText(/14.*20 weeks/i)).toBeInTheDocument();
+		// Stats strip shows estimated calendar time when there are items
+		expect(screen.getByText('calendar time')).toBeInTheDocument();
 	});
 
 	it('renders the "Download CSV" button', () => {
