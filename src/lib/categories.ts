@@ -200,3 +200,94 @@ export function buildCsv(categories: Category[]): string {
 	}
 	return rows.join('\n');
 }
+
+// ── CSV import ─────────────────────────────────────────────────────
+
+export type ImportError = { row: number; message: string };
+
+export type ImportResult = {
+	categories: Category[];
+	errors: ImportError[];
+	imported: number;
+	skipped: number;
+};
+
+function parseCsvRow(line: string): string[] {
+	const cols: string[] = [];
+	let inQuote = false;
+	let cur = '';
+	for (let i = 0; i < line.length; i++) {
+		const ch = line[i];
+		if (ch === '"') {
+			if (inQuote && line[i + 1] === '"') { cur += '"'; i++; }
+			else inQuote = !inQuote;
+		} else if (ch === ',' && !inQuote) {
+			cols.push(cur); cur = '';
+		} else {
+			cur += ch;
+		}
+	}
+	cols.push(cur);
+	return cols;
+}
+
+export function parseCsvImport(csv: string, base: Category[]): ImportResult {
+	const lines = csv.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+	if (lines.length < 2) {
+		return { categories: base.map(c => ({ ...c, items: [] })), errors: [{ row: 0, message: 'File appears empty or has no data rows.' }], imported: 0, skipped: 0 };
+	}
+
+	const header = parseCsvRow(lines[0]).map(h => h.toLowerCase().trim());
+	const colCategory = header.indexOf('category');
+	const colSubtitle = header.indexOf('subtitle');
+	const colItem     = header.indexOf('item');
+	const colWeeks    = header.indexOf('weeks');
+
+	const errors: ImportError[] = [];
+
+	if (colItem === -1) {
+		errors.push({ row: 1, message: 'Missing required column: "Item"' });
+		return { categories: base.map(c => ({ ...c, items: [] })), errors, imported: 0, skipped: 0 };
+	}
+	if (colSubtitle === -1 && colCategory === -1) {
+		errors.push({ row: 1, message: 'Missing required column: "Subtitle" or "Category"' });
+		return { categories: base.map(c => ({ ...c, items: [] })), errors, imported: 0, skipped: 0 };
+	}
+
+	const result: Category[] = base.map(c => ({ ...c, items: [] }));
+	let imported = 0;
+	let skipped  = 0;
+
+	for (let i = 1; i < lines.length; i++) {
+		const cols     = parseCsvRow(lines[i]);
+		const subtitle = (colSubtitle !== -1 ? cols[colSubtitle] : '')?.trim() ?? '';
+		const category = (colCategory !== -1 ? cols[colCategory] : '')?.trim() ?? '';
+		const item     = cols[colItem]?.trim() ?? '';
+		const weeksRaw = (colWeeks !== -1 ? cols[colWeeks] : '')?.trim() ?? '';
+
+		// Skip blank rows silently
+		if (!item && !weeksRaw) { skipped++; continue; }
+
+		// Match category by Subtitle (preferred) then Category name
+		const cat = result.find(c =>
+			(subtitle && c.subtitle.toLowerCase() === subtitle.toLowerCase()) ||
+			(category && c.name.toLowerCase() === category.toLowerCase())
+		);
+
+		if (!cat) {
+			errors.push({ row: i + 1, message: `Row ${i + 1}: unknown category "${subtitle || category}" — row skipped` });
+			skipped++;
+			continue;
+		}
+
+		const weeks = weeksRaw !== '' ? parseFloat(weeksRaw) : null;
+		cat.items.push({
+			id:          crypto.randomUUID(),
+			description: item,
+			weeks:       (weeks != null && !isNaN(weeks)) ? weeks : null,
+		});
+		imported++;
+	}
+
+	return { categories: result, errors, imported, skipped };
+}

@@ -5,9 +5,11 @@
 	import CategoryCard from '$lib/components/CategoryCard.svelte';
 	import InlineSummary from '$lib/components/InlineSummary.svelte';
 	import SummaryModal from '$lib/components/SummaryModal.svelte';
+	import ImportModal from '$lib/components/ImportModal.svelte';
 
 	let categories = $state(initialCategories());
-	let modalOpen = $state(false);
+	let modalOpen   = $state(false);
+	let importOpen  = $state(false);
 
 	let openBefore = $state(true);
 	let openCore   = $state(true);
@@ -61,6 +63,11 @@
 	function loadSample() {
 		categories = sampleCategories();
 	}
+
+	function handleImport(imported: typeof categories) {
+		categories = imported;
+		importOpen = false;
+	}
 </script>
 
 <div class="site-header">
@@ -83,7 +90,8 @@
 			</select>
 			of <strong>effort</strong> it takes — not how long it'll sit on the calendar.
 			The breakdown will show how it all lands in real time.
-			Not sure where to start? <button class="pill-btn" onclick={loadSample}>Load a sample project</button>.
+			Not sure where to start? <button class="pill-btn" onclick={loadSample}>Load a sample project</button>
+			or <button class="pill-btn" onclick={() => (importOpen = true)}>Upload a CSV</button>.
 		</p>
 	</header>
 
@@ -201,6 +209,14 @@
 	<SummaryModal {categories} {unit} onclose={() => (modalOpen = false)} />
 {/if}
 
+{#if importOpen}
+	<ImportModal
+		baseCategories={categories}
+		onimport={handleImport}
+		onclose={() => (importOpen = false)}
+	/>
+{/if}
+
 <style>
 	.page {
 		max-width: 1200px;
@@ -281,7 +297,6 @@
 		font-size: 0.95rem;
 		color: var(--text-muted);
 		line-height: 1.8;
-		max-width: 700px;
 	}
 
 	.hero-quote {
