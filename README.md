@@ -1,42 +1,59 @@
-# sv
+# TrueEstimate
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+> "The work is never just 'the work'"
 
-## Creating a project
+A project estimation tool that helps you see the full cost of a project — not just the core execution work, but everything around it: acquisition, preparation, iteration, admin, surprises, and maintenance.
 
-If you're seeing this, you've probably already done this step. Congrats!
+Built by [Mitchell Lisle](https://github.com/mitchelllisle) based on the framework described in ["The work is never just 'the work'"](https://davestewart.co.uk/blog/work/project-estimation/) by [Dave Stewart](https://davestewart.co.uk/).
+
+---
+
+## What it does
+
+Most estimates only capture the visible work. TrueEstimate prompts you to break your project into 8 categories:
+
+| Category | Description |
+|---|---|
+| **Acquisition** | Sourcing, access, licensing — work before the work begins |
+| **Preparation** | Setup, onboarding, environment configuration |
+| **Execution** | The actual work you'd normally estimate |
+| **Admin** | Meetings, reviews, coordination — runs concurrent with everything |
+| **Iteration** | Feedback cycles and revisions |
+| **Changes** | Scope changes and pivots |
+| **Surprises** | Bugs, blockers, unexpected problems |
+| **Maintenance & Ops** | Support and upkeep after delivery |
+
+Enter effort hours (or days/weeks) for each item and the breakdown shows:
+- Total effort across all categories
+- Estimated **calendar time** (accounting for concurrency and spreading)
+- A visual Gantt-style timeline
+- Methodology transparency — exactly how each calendar estimate is calculated
+
+## Features
+
+- Enter estimates in hours, days, or weeks
+- Load a sample project to explore the model
+- Import/export via CSV
+- Full breakdown modal with Gantt timeline and elapsed-time methodology
+- Dark mode
+- Privacy-first: nothing is stored, sent, or collected — all data lives in your browser
+
+## Development
 
 ```sh
-# create a new project
-npx sv create my-app
-```
-
-To recreate this project with the same configuration:
-
-```sh
-# recreate this project
-npx sv@0.12.8 create --template minimal --types ts --install npm .
-```
-
-## Developing
-
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```sh
+npm install
 npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
 ```
 
-## Building
-
-To create a production version of your app:
+## Build
 
 ```sh
 npm run build
+npm run preview
 ```
 
-You can preview the production build with `npm run preview`.
+## Tests
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+```sh
+npm test
+```

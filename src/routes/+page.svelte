@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { slide } from 'svelte/transition';
 	import { initialCategories, sampleCategories, type Unit, UNITS, UNIT_LABELS, UNIT_SHORT, toUnit } from '$lib/categories';
 	import type { Item } from '$lib/categories';
@@ -15,6 +16,16 @@
 	let openCore   = $state(true);
 	let openAfter  = $state(true);
 	let unit       = $state<Unit>('weeks');
+
+	let darkMode = $state(false);
+	onMount(() => {
+		const saved = localStorage.getItem('theme');
+		darkMode = saved ? saved === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+	});
+	$effect(() => {
+		document.documentElement.dataset.theme = darkMode ? 'dark' : 'light';
+		localStorage.setItem('theme', darkMode ? 'dark' : 'light');
+	});
 
 	function addItem(categoryId: string) {
 		categories = categories.map((c) =>
@@ -76,6 +87,25 @@
 			<span class="logo-pulse" aria-hidden="true">T</span>
 			<span class="logo-text">TrueEstimate</span>
 		</div>
+		<button
+			class="theme-toggle"
+			onclick={() => (darkMode = !darkMode)}
+			aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+		>
+			{#if darkMode}
+				<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+					<circle cx="12" cy="12" r="5"/>
+					<line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+					<line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+					<line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+					<line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+				</svg>
+			{:else}
+				<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+					<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+				</svg>
+			{/if}
+		</button>
 	</div>
 </div>
 
@@ -184,17 +214,9 @@
 
 	<footer class="footer">
 		<p class="attribution">
-			Based on <a
-				href="https://davestewart.co.uk/blog/work/project-estimation/"
-				target="_blank"
-				rel="noopener noreferrer"
-			>"The work is never just 'the work'"</a
-			> by <a
-				href="https://davestewart.co.uk/"
-				target="_blank"
-				rel="noopener noreferrer"
-			>Dave Stewart</a
-			> — used with thanks.
+			Built by <a href="https://github.com/mitchelllisle" target="_blank" rel="noopener noreferrer">Mitchell Lisle</a>
+			based on <a href="https://davestewart.co.uk/blog/work/project-estimation/" target="_blank" rel="noopener noreferrer">"The work is never just 'the work'"</a>
+			by <a href="https://davestewart.co.uk/" target="_blank" rel="noopener noreferrer">Dave Stewart</a>.
 		</p>
 		<p class="privacy">
 			🔒 Nothing you enter here is stored, sent, or collected. All data exists only in your
@@ -226,8 +248,8 @@
 
 	/* ── Site header (full-width, outside .page) ────── */
 	.site-header {
-		background: #fff;
-		color: #000;
+		background: var(--surface);
+		color: var(--text);
 		border-bottom: 1px solid var(--border);
 	}
 
@@ -237,6 +259,7 @@
 		padding: 0.85rem 1.5rem;
 		display: flex;
 		align-items: center;
+		justify-content: space-between;
 	}
 
 	.logo {
@@ -255,7 +278,7 @@
 		flex-shrink: 0;
 		font-size: 0.7rem;
 		font-weight: 800;
-		color: #fff;
+		color: var(--bg);
 		z-index: 0;
 	}
 
@@ -265,7 +288,7 @@
 		position: absolute;
 		inset: 0;
 		border-radius: 50%;
-		background: #000;
+		background: var(--text);
 		z-index: -1;
 	}
 
@@ -284,7 +307,7 @@
 		font-size: 1.05rem;
 		font-weight: 700;
 		letter-spacing: -0.02em;
-		color: #000;
+		color: inherit;
 	}
 
 	/* ── Hero ────────────────────────────────────────── */
@@ -400,7 +423,7 @@
 	}
 
 	.scope-toggle:hover {
-		background: rgba(0, 0, 0, 0.03);
+		background: var(--hover-tint);
 	}
 
 	.scope-toggle-text {
@@ -422,7 +445,7 @@
 
 	.scope-hint {
 		font-size: 0.7rem;
-		color: #9ca3af;
+		color: var(--text-muted);
 	}
 
 	.scope-tally {
@@ -430,7 +453,7 @@
 		font-size: 0.72rem;
 		font-weight: 600;
 		color: var(--text-muted);
-		background: rgba(0, 0, 0, 0.06);
+		background: var(--tally-bg);
 		border-radius: 999px;
 		padding: 0.15rem 0.55rem;
 		white-space: nowrap;
@@ -476,6 +499,23 @@
 
 	.privacy {
 		font-size: 0.75rem;
-		color: #9ca3af;
+		color: var(--text-muted);
+	}
+
+	.theme-toggle {
+		background: transparent;
+		color: var(--text-muted);
+		border: 1.5px solid var(--border);
+		border-radius: var(--radius-sm);
+		padding: 0.35rem 0.45rem;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		line-height: 1;
+	}
+	.theme-toggle:hover {
+		color: var(--text);
+		background: var(--hover-tint);
+		border-color: var(--text-muted);
 	}
 </style>

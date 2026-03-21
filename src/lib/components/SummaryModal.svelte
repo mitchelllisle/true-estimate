@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { fade, fly } from 'svelte/transition';
 	import type { Category } from '$lib/categories';
-	import { buildCsv, coreWeeks, totalWeeks, type Unit, toUnit, UNIT_LABELS, UNIT_SHORT } from '$lib/categories';
+	import { buildCsv, coreWeeks, totalWeeks, getCalendarWeeks, getElapsedBreakdown, type Unit, toUnit, UNIT_LABELS, UNIT_SHORT } from '$lib/categories';
 	import GanttChart from './GanttChart.svelte';
 
 	let {
@@ -16,17 +16,34 @@
 
 	const core     = $derived(coreWeeks(categories));
 	const total    = $derived(totalWeeks(categories));
+	const calWeeks = $derived(getCalendarWeeks(categories));
+	const elapsed  = $derived(getElapsedBreakdown(categories));
 	const pctCore  = $derived(total > 0 ? Math.round((core / total) * 100) : 0);
+	const overhead = $derived(core > 0 && total > core ? Math.round(((total - core) / core) * 100) : 0);
 
-	const projLow  = $derived(Math.round(core * 3.5 * 10) / 10);
-	const projHigh = $derived(Math.round(core * 5 * 10) / 10);
+	const uCore   = $derived(toUnit(core, unit));
+	const uTotal  = $derived(toUnit(total, unit));
+	const uCal    = $derived(calWeeks != null ? toUnit(calWeeks, unit) : null);
+	const uShort  = $derived(UNIT_SHORT[unit]);
+	const uLabel  = $derived(UNIT_LABELS[unit].toLowerCase());
 
-	const uCore     = $derived(toUnit(core, unit));
-	const uTotal    = $derived(toUnit(total, unit));
-	const uProjLow  = $derived(toUnit(projLow, unit));
-	const uProjHigh = $derived(toUnit(projHigh, unit));
-	const uShort    = $derived(UNIT_SHORT[unit]);
-	const uLabel    = $derived(UNIT_LABELS[unit].toLowerCase());
+	const catRows = $derived(
+		categories
+			.filter((c) => c.items.length > 0)
+			.map((c) => {
+				const effortWeeks = c.items.reduce((s, i) => s + (i.weeks ?? 0), 0);
+				const elapsedEntry = elapsed.find((e) => e.id === c.id);
+				return {
+					...c,
+					effortWeeks,
+					uEffort: toUnit(effortWeeks, unit),
+					uElapsed: elapsedEntry ? toUnit(elapsedEntry.elapsedWeeks, unit) : null,
+					pattern: elapsedEntry?.pattern ?? '',
+					methodology: elapsedEntry?.methodology ?? '',
+					pct: total > 0 ? Math.round((effortWeeks / total) * 100) : 0,
+				};
+			})
+	);
 
 	function downloadCsv() {
 		const csv = buildCsv(categories);
@@ -67,77 +84,123 @@
 		</header>
 
 		<div class="modal-body">
-			<!-- ── Gantt – most prominent ──────────────────── -->
+			<!-- Stats strip -->
 			{#if total > 0}
-				<section class="gantt-section">
-					<h3 class="section-label">Project timeline</h3>
-					<GanttChart {categories} {unit} />
-				</section>
-			{/if}
-
-			<!-- ── Insight callout + category table ─────────── -->
-			<section class="details-section">
-				<div class="details-left">
-					{#if core > 0}
-						<div class="callout">
-							<div class="callout-icon" aria-hidden="true">💡</div>
-							<div class="callout-text">
-								<strong>You estimated {uCore} {uLabel} for “the work”</strong>
-								— that’s only <strong>{pctCore}%</strong> of everything entered so far.
-								{#if total > core}
-									<br />Based on the rest of the work listed, the realistic total is
-									<strong>{uTotal} {uLabel}</strong>. If only the core work had been estimated,
-									the project would likely run
-									<strong>{uProjLow}–{uProjHigh} {uLabel}</strong> in practice
-									(3.5–5× the original estimate).
-								{:else}
-									<br />Try adding items to the other categories to see how quickly the total grows.
-								{/if}
-							</div>
+				<div class="stats-strip">
+					<div class="stat">
+						<span class="stat-value">{uTotal}{uShort}</span>
+						<span class="stat-label">total effort</span>
+					</div>
+					{#if uCal != null}
+						<div class="stat stat--cal">
+							<span class="stat-value">~{uCal}{uShort}</span>
+							<span class="stat-label">calendar time</span>
+						</div>
+					{/if}
+					{#if pctCore > 0}
+						<div class="stat">
+							<span class="stat-value">{pctCore}%</span>
+							<span class="stat-label">core execution</span>
+						</div>
+					{/if}
+					{#if overhead > 0}
+						<div class="stat">
+							<span class="stat-value">+{overhead}%</span>
+							<span class="stat-label">overhead beyond core</span>
 						</div>
 					{/if}
 				</div>
-				<div class="details-right">
+			{/if}
+
+			<!-- Timeline + methodology -->
+			{#if total > 0}
+				<section class="gantt-section">
+					<h3 class="section-label">Timeline</h3>
+					<GanttChart {categories} {unit} />
+					{#if elapsed.length > 0}
+						<details class="methodology">
+							<summary>How we estimate calendar time</summary>
+							<p class="method-intro">
+								Calendar time differs from effort because tasks overlap, spread out, or continue
+								in the background while other work is happening. Here's the rule used for each category:
+							</p>
+							<table class="method-table">
+								<tbody>
+									{#each elapsed as e}
+										<tr>
+											<td class="method-swatch"><span class="swatch" style="background: {e.color};" aria-hidden="true"></span></td>
+											<td class="method-name">{e.name}</td>
+											<td class="method-pattern">{e.pattern}</td>
+											<td class="method-desc">{e.methodology}</td>
+										</tr>
+									{/each}
+								</tbody>
+							</table>
+						</details>
+					{/if}
+				</section>
+			{/if}
+
+			<!-- Effort breakdown table -->
+			{#if catRows.length > 0}
+				<section class="breakdown-section">
+					<h3 class="section-label">Effort breakdown</h3>
 					<div class="table-wrap">
 						<table>
 							<thead>
 								<tr>
 									<th></th>
 									<th>Category</th>
-									<th>Items</th>
-									<th class="num">{UNIT_LABELS[unit]}</th>
+									<th class="num">Effort</th>
+									<th class="num">Elapsed est.</th>
+									<th class="pattern-col">Pattern</th>
 									<th class="num">% of total</th>
 								</tr>
 							</thead>
 							<tbody>
-								{#each categories as cat}
-									{@const catWeeks = cat.items.reduce((s, i) => s + (i.weeks ?? 0), 0)}
-									{@const catPct = total > 0 ? Math.round((catWeeks / total) * 100) : 0}
-									<tr class:core-row={cat.isCore} class:zero={catWeeks === 0}>
-										<td><span class="swatch" style="background: {cat.color};" aria-hidden="true"></span></td>
+								{#each catRows as row}
+									<tr>
+										<td><span class="swatch" style="background: {row.color};" aria-hidden="true"></span></td>
 										<td>
-											<span class="cat-name">{cat.name}</span>
-											<span class="cat-sub">{cat.subtitle}</span>
+											<span class="cat-name">{row.name}</span>
+											<span class="cat-sub">{row.subtitle}</span>
 										</td>
-										<td class="item-count">{cat.items.length}</td>
-										<td class="num">{catWeeks > 0 ? toUnit(catWeeks, unit) + uShort : '—'}</td>
-										<td class="num">{catWeeks > 0 ? catPct + '%' : '—'}</td>
+										<td class="num">{row.uEffort}{uShort}</td>
+										<td class="num elapsed-cell">
+											{#if row.uElapsed != null}
+												~{row.uElapsed}{uShort}
+												{#if row.uElapsed > row.uEffort}
+													<span class="spread-badge">spread</span>
+												{/if}
+											{:else}
+												—
+											{/if}
+										</td>
+										<td class="pattern-cell">{row.pattern}</td>
+										<td class="num">{row.pct}%</td>
 									</tr>
 								{/each}
 								<tr class="total-row">
 									<td></td>
 									<td><strong>Total</strong></td>
-									<td></td>
 									<td class="num"><strong>{uTotal}{uShort}</strong></td>
+									<td class="num">
+										{#if uCal != null}<strong>~{uCal}{uShort}</strong>{:else}—{/if}
+									</td>
+									<td></td>
 									<td class="num"><strong>100%</strong></td>
 								</tr>
 							</tbody>
 						</table>
 					</div>
-				</div>
-			</section>
+					<p class="elapsed-note">
+						Elapsed shows how long each activity spans on the calendar. Overlapping tasks run
+						concurrently, so the project total is less than the sum of individual elapsed estimates.
+					</p>
+				</section>
+			{/if}
 
-			<!-- ── All items ────────────────────────────────────── -->
+			<!-- All items -->
 			{#if categories.some((c) => c.items.length > 0)}
 				<section class="items-section">
 					<h3 class="section-label">All items</h3>
@@ -230,31 +293,50 @@
 		flex: 1;
 	}
 
-	/* ── Modal sections ───────────────────────────── */
-	.gantt-section {
-		padding: 1.75rem 2rem 1.5rem;
+	/* Stats strip */
+	.stats-strip {
+		display: flex;
+		flex-wrap: wrap;
 		border-bottom: 1px solid var(--border);
 		flex-shrink: 0;
 	}
 
-	.details-section {
-		display: grid;
-		grid-template-columns: 1fr 1.5fr;
+	.stat {
+		display: flex;
+		flex-direction: column;
+		gap: 0.2rem;
+		padding: 1rem 2rem;
+		border-right: 1px solid var(--border);
+	}
+	.stat:last-child { border-right: none; }
+
+	.stat-value {
+		font-size: 1.6rem;
+		font-weight: 700;
+		line-height: 1;
+		font-variant-numeric: tabular-nums;
+	}
+	.stat--cal .stat-value { color: #0369a1; }
+
+	:global([data-theme="dark"]) .stat--cal .stat-value { color: #38bdf8; }
+
+	.stat-label {
+		font-size: 0.72rem;
+		font-weight: 600;
+		text-transform: uppercase;
+		letter-spacing: 0.06em;
+		color: var(--text-muted);
+	}
+
+	/* Sections */
+	.gantt-section,
+	.breakdown-section {
+		padding: 1.75rem 2rem 1.5rem;
 		border-bottom: 1px solid var(--border);
 	}
 
-	.details-left {
-		padding: 1.5rem;
-		border-right: 1px solid var(--border);
-	}
-
-	.details-right {
-		padding: 1.5rem;
-		overflow-x: auto;
-	}
-
 	.items-section {
-		padding: 1.5rem 2rem 2rem;
+		padding: 1.75rem 2rem 2rem;
 	}
 
 	.section-label {
@@ -266,7 +348,50 @@
 		margin-bottom: 1rem;
 	}
 
-	/* Table */
+	/* Methodology disclosure */
+	.methodology {
+		margin-top: 1.25rem;
+		border: 1px solid var(--border);
+		border-radius: var(--radius-sm);
+		overflow: hidden;
+	}
+
+	.methodology summary {
+		padding: 0.6rem 0.9rem;
+		font-size: 0.82rem;
+		font-weight: 600;
+		cursor: pointer;
+		user-select: none;
+		color: var(--text-muted);
+		background: var(--bg);
+		list-style: none;
+	}
+	.methodology summary::-webkit-details-marker { display: none; }
+	.methodology summary::before { content: '\25B8 '; }
+	.methodology[open] summary::before { content: '\25BE '; }
+	.methodology summary:hover { color: var(--text); }
+
+	.method-intro {
+		padding: 0.75rem 0.9rem 0.25rem;
+		font-size: 0.83rem;
+		color: var(--text-muted);
+		line-height: 1.5;
+		border-top: 1px solid var(--border);
+	}
+
+	.method-table {
+		width: 100%;
+		border-collapse: collapse;
+		font-size: 0.82rem;
+	}
+	.method-table tbody tr { border-top: 1px solid var(--border); }
+	.method-table td { padding: 0.45rem 0.6rem; vertical-align: top; }
+	.method-swatch { width: 24px; }
+	.method-name { font-weight: 600; white-space: nowrap; }
+	.method-pattern { color: var(--text-muted); white-space: nowrap; font-size: 0.78rem; padding-right: 0.5rem; }
+	.method-desc { color: var(--text-muted); }
+
+	/* Breakdown table */
 	.table-wrap { overflow-x: auto; }
 
 	table {
@@ -285,7 +410,6 @@
 		padding: 0.4rem 0.6rem;
 		border-bottom: 2px solid var(--border);
 	}
-
 	thead th.num { text-align: right; }
 
 	tbody tr {
@@ -293,7 +417,6 @@
 		transition: background var(--transition);
 	}
 	tbody tr:hover { background: var(--bg); }
-	tbody tr.zero { opacity: 0.45; }
 
 	tbody td {
 		padding: 0.55rem 0.6rem;
@@ -301,8 +424,23 @@
 	}
 	tbody td.num { text-align: right; font-variant-numeric: tabular-nums; }
 
-	.core-row { background: #fffbeb; font-weight: 600; }
-	.core-row:hover { background: #fef9c3; }
+	.pattern-col { width: 28%; }
+	.pattern-cell { font-size: 0.78rem; color: var(--text-muted); }
+
+	.elapsed-cell { white-space: nowrap; }
+	.spread-badge {
+		display: inline-block;
+		margin-left: 0.3rem;
+		font-size: 0.68rem;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		color: #6b21a8;
+		background: #f3e8ff;
+		border-radius: 3px;
+		padding: 0.05rem 0.3rem;
+		vertical-align: middle;
+	}
 
 	.total-row td {
 		padding: 0.6rem 0.6rem;
@@ -310,6 +448,13 @@
 		font-size: 0.9rem;
 	}
 	.total-row td.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+	.elapsed-note {
+		margin-top: 0.75rem;
+		font-size: 0.78rem;
+		color: var(--text-muted);
+		line-height: 1.5;
+	}
 
 	.swatch {
 		display: inline-block;
@@ -328,25 +473,8 @@
 		font-size: 0.72rem;
 		color: var(--text-muted);
 	}
-	.item-count { color: var(--text-muted); font-size: 0.82rem; }
 
-	/* Callout */
-	.callout {
-		display: flex;
-		gap: 0.75rem;
-		align-items: flex-start;
-		background: #fffbeb;
-		border: 1.5px solid #fde68a;
-		border-radius: var(--radius-sm);
-		padding: 0.85rem 1rem;
-		font-size: 0.875rem;
-		line-height: 1.55;
-	}
-	.callout-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 0.05rem; }
-
-	/* Timeline section (replaced by .gantt-section) */
-
-
+	/* Items */
 	.item-list { display: flex; flex-direction: column; gap: 0.75rem; }
 
 	.cat-group-header {

@@ -249,9 +249,9 @@
 	}
 
 	.modal {
-		background: #fff;
+		background: var(--surface);
 		border-radius: 14px;
-		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
 		width: 100%;
 		max-width: 560px;
 		max-height: 90vh;
@@ -315,8 +315,8 @@
 
 	.drop-zone:hover,
 	.drop-zone--over {
-		border-color: #000;
-		background: rgba(0, 0, 0, 0.025);
+		border-color: var(--text);
+		background: var(--hover-tint);
 	}
 
 	.file-input {
@@ -422,6 +422,11 @@
 		padding: 0.75rem 1rem;
 	}
 
+	:global([data-theme="dark"]) .errors {
+		background: #2d1f07;
+		border-color: #92400e;
+	}
+
 	.errors ul {
 		margin: 0;
 		padding-left: 1.1rem;
@@ -433,6 +438,10 @@
 	.errors li {
 		font-size: 0.75rem;
 		color: #92400e;
+	}
+
+	:global([data-theme="dark"]) .errors li {
+		color: #fbbf24;
 	}
 
 	/* ── Format reference ───────────────────────── */
@@ -503,7 +512,7 @@
 
 	.btn-template:hover {
 		border-color: var(--text-muted);
-		background: rgba(0, 0, 0, 0.04);
+		background: var(--hover-tint);
 	}
 
 	/* ── Footer ──────────────────────────────────── */
@@ -531,8 +540,8 @@
 	.btn-cancel:hover { border-color: var(--text-muted); }
 
 	.btn-import {
-		background: #000;
-		color: #fff;
+		background: var(--text);
+		color: var(--bg);
 		border: none;
 		border-radius: 999px;
 		padding: 0.35rem 1.1rem;

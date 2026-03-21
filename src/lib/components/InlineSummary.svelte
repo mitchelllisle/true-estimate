@@ -87,7 +87,7 @@
 		left: 0;
 		right: 0;
 		z-index: 100;
-		background: rgba(255, 255, 255, 0.95);
+		background: var(--bar-bg);
 		backdrop-filter: blur(8px);
 		-webkit-backdrop-filter: blur(8px);
 		border-top: 1px solid var(--border);
@@ -137,7 +137,7 @@
 	}
 
 	.stat-value.core { color: #b58900; }
-	.stat-value.total { color: #1a1a1a; }
+	.stat-value.total { color: var(--text); }
 
 	.unit {
 		font-size: 0.65rem;
@@ -188,7 +188,7 @@
 	.breakdown-btn {
 		flex-shrink: 0;
 		background: var(--text);
-		color: #fff;
+		color: var(--bg);
 		font-size: 0.82rem;
 		font-weight: 600;
 		padding: 0.5rem 1rem;
@@ -197,7 +197,8 @@
 	}
 
 	.breakdown-btn:hover:not(:disabled) {
-		background: #333;
+		background: var(--text-muted);
+		color: var(--bg);
 	}
 
 	.breakdown-btn:disabled {

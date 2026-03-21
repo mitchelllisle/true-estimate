@@ -172,6 +172,80 @@ export function hiddenWeeks(categories: Category[]): number {
 	return totalWeeks(categories) - coreWeeks(categories);
 }
 
+// ── Timeline estimation helpers ────────────────────────────────────
+
+/** Shared calculation kernel: returns elapsed-week positions, mirroring GanttChart logic */
+function timelinePositions(cats: Category[]) {
+	const eff = (id: string) =>
+		cats.find((c) => c.id === id)?.items.reduce((s, i) => s + (i.weeks ?? 0), 0) ?? 0;
+
+	const acq  = eff('to-get');
+	const prep = eff('before');
+	const core = eff('the-work');
+	const iter = eff('between');
+	const chng = eff('beyond');
+	const prbs = eff('outside');
+	const aftr = eff('after');
+
+	const core_e     = prep + core;
+	const aftr_e     = core_e + (aftr > 0 ? aftr * 2 : 0);
+	const projectEnd = Math.max(aftr_e, core_e);
+
+	const iter_e = iter > 0 ? (prep + core * 0.4) + iter + 1.5 : core_e;
+	const chng_e = chng > 0 ? (prep + core * 0.55) + chng + 2  : core_e;
+	const prbs_s = prep > 0 ? prep * 0.3 : core_e - core;
+	const prbs_e = prbs > 0 ? Math.max(projectEnd * 0.88, core_e + 0.5) : prbs_s;
+
+	const tMax = Math.max(projectEnd, iter_e, chng_e, prbs_e);
+
+	return { acq, prep, core, iter, chng, prbs, aftr, core_e, aftr_e, projectEnd, iter_e, chng_e, prbs_s, prbs_e, tMax };
+}
+
+/** Estimated total calendar weeks for the project (from kickoff to last activity) */
+export function getCalendarWeeks(cats: Category[]): number | null {
+	const { acq, prep, core, iter, chng, prbs, aftr, tMax } = timelinePositions(cats);
+	if (acq + prep + core + iter + chng + prbs + aftr < 0.5) return null;
+	return Math.round(tMax * 10) / 10;
+}
+
+export type ElapsedEntry = {
+	id: string;
+	name: string;
+	color: string;
+	effortWeeks: number;
+	elapsedWeeks: number;
+	/** Very short label: "1:1", "full span", "overlapping", etc. */
+	pattern: string;
+	/** One-sentence explanation shown in the methodology section */
+	methodology: string;
+};
+
+/** Per-category effort vs estimated elapsed calendar time */
+export function getElapsedBreakdown(cats: Category[]): ElapsedEntry[] {
+	const { acq, prep, core, iter, chng, prbs, aftr, core_e, projectEnd, iter_e, chng_e, prbs_s, prbs_e, aftr_e } = timelinePositions(cats);
+	const r = (n: number) => Math.round(n * 10) / 10;
+	const entries: ElapsedEntry[] = [];
+
+	const push = (id: string, effort: number, elapsed: number, pattern: string, methodology: string) => {
+		if (effort <= 0) return;
+		const c = cats.find((cc) => cc.id === id)!;
+		entries.push({ id, name: c.name, color: c.color, effortWeeks: effort, elapsedWeeks: r(elapsed), pattern, methodology });
+	};
+
+	push('to-get',   acq,  acq * 1.5,         'pre-project (1.5×)', 'Acquisition rarely happens in one block — spread 1.5× over calendar before kickoff.');
+	push('before',   prep, prep,               '1:1 sequential',     'Setup work happens in order at the start; effort equals elapsed time.');
+	push('the-work', core, core,               '1:1 sequential',     'Core execution is sequential; effort equals elapsed time.');
+	push('around',   eff('around'), projectEnd,'full project span',   'Admin & meetings run concurrently throughout — elapsed = entire project duration.');
+	push('between',  iter, iter_e - (prep + core * 0.4), 'overlapping + 1.5w tail', 'Iteration begins ~40% into core work and runs 1.5w beyond the effort estimate.');
+	push('beyond',   chng, chng_e - (prep + core * 0.55),'overlapping + 2w tail',   'Changes emerge ~55% into core and tend to run 2w beyond the effort estimate.');
+	push('outside',  prbs, r(prbs_e - prbs_s), 'distributed (≈88%)', 'Surprises are distributed across ~88% of the project timeline — always spread out.');
+	push('after',    aftr, aftr * 2,            '2:1 spread',          'Maintenance happens at a steady drip — effort spreads to roughly 2× calendar time.');
+
+	return entries;
+
+	function eff(id: string) { return cats.find((c) => c.id === id)?.items.reduce((s, i) => s + (i.weeks ?? 0), 0) ?? 0; }
+}
+
 // ── Unit system ────────────────────────────────────────────────────
 export type Unit = 'weeks' | 'days' | 'months' | 'sprints';
 export const UNITS: Unit[] = ['weeks', 'days', 'months', 'sprints'];
