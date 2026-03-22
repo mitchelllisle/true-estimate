@@ -18,9 +18,8 @@ const PROJECT_ANIMALS = [
 ];
 
 export function generateProjectName(): string {
-	const action = PROJECT_ACTIONS[Math.floor(Math.random() * PROJECT_ACTIONS.length)];
-	const animal = PROJECT_ANIMALS[Math.floor(Math.random() * PROJECT_ANIMALS.length)];
-	return `${action}${animal}`;
+	const pick = <T>(arr: T[]) => arr[Math.floor(Math.random() * arr.length)];
+	return `${pick(PROJECT_ACTIONS)}${pick(PROJECT_ANIMALS)}`;
 }
 
 export type Category = {
@@ -519,6 +518,7 @@ function timelinePositions(cats: Category[]) {
 	const acq  = eff('to-get');
 	const prep = eff('before');
 	const core = eff('the-work');
+	const admn = eff('around');
 	const iter = eff('between');
 	const chng = eff('beyond');
 	const prbs = eff('outside');
@@ -535,7 +535,7 @@ function timelinePositions(cats: Category[]) {
 
 	const tMax = Math.max(projectEnd, iter_e, chng_e, prbs_e);
 
-	return { acq, prep, core, iter, chng, prbs, aftr, core_e, aftr_e, projectEnd, iter_e, chng_e, prbs_s, prbs_e, tMax };
+	return { acq, prep, core, admn, iter, chng, prbs, aftr, core_e, aftr_e, projectEnd, iter_e, chng_e, prbs_s, prbs_e, tMax };
 }
 
 /** Estimated total calendar weeks for the project (from kickoff to last activity) */
@@ -571,7 +571,7 @@ export type ElapsedEntry = {
 
 /** Per-category effort vs estimated elapsed calendar time */
 export function getElapsedBreakdown(cats: Category[]): ElapsedEntry[] {
-	const { acq, prep, core, iter, chng, prbs, aftr, core_e, projectEnd, iter_e, chng_e, prbs_s, prbs_e, aftr_e, tMax } = timelinePositions(cats);
+	const { acq, prep, core, admn, iter, chng, prbs, aftr, core_e, projectEnd, iter_e, chng_e, prbs_s, prbs_e, aftr_e, tMax } = timelinePositions(cats);
 	const r = (n: number) => Math.round(n * 10) / 10;
 	const entries: ElapsedEntry[] = [];
 
@@ -584,15 +584,13 @@ export function getElapsedBreakdown(cats: Category[]): ElapsedEntry[] {
 	push('to-get',   acq,  acq * 1.5,         'pre-project (1.5×)', 'Acquisition rarely happens in one block — spread 1.5× over calendar before kickoff.');
 	push('before',   prep, prep,               '1:1 sequential',     'Setup work happens in order at the start; effort equals elapsed time.');
 	push('the-work', core, core,               '1:1 sequential',     'Core execution is sequential; effort equals elapsed time.');
-	push('around',   eff('around'), tMax,      'full project span',   'Admin & meetings run concurrently throughout — elapsed = entire project duration.');
+	push('around',   admn, tMax,               'full project span',   'Admin & meetings run concurrently throughout — elapsed = entire project duration.');
 	push('between',  iter, iter_e - (prep + core * 0.4), 'overlapping + 1.5w tail', 'Iteration begins ~40% into core work and runs 1.5w beyond the effort estimate.');
 	push('beyond',   chng, chng_e - (prep + core * 0.55),'overlapping + 2w tail',   'Changes emerge ~55% into core and tend to run 2w beyond the effort estimate.');
 	push('outside',  prbs, r(prbs_e - prbs_s), 'distributed (≈88%)', 'Surprises are distributed across ~88% of the project timeline — always spread out.');
 	push('after',    aftr, aftr * 2,            '2:1 spread',          'Maintenance happens at a steady drip — effort spreads to roughly 2× calendar time.');
 
 	return entries;
-
-	function eff(id: string) { return cats.find((c) => c.id === id)?.items.reduce((s, i) => s + (i.weeks ?? 0), 0) ?? 0; }
 }
 
 // ── Unit system ────────────────────────────────────────────────────

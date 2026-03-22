@@ -52,7 +52,6 @@
 	const tipOptimistic  = $derived(calWeeks       != null ? fmt(calWeeks)       : '');
 
 	// Proportional bar segments — one per category (non-zero only)
-	// Proportional bar segments — one per category (non-zero only)
 	const segments = $derived(
 		total > 0
 			? categories
