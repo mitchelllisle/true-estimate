@@ -138,6 +138,9 @@
 			if (eff(id) === 0) continue;
 			const cat = cats.find((c) => c.id === id)!;
 			const m = META[id];
+			// In realistic mode everything except the pre-project acquisition bar gets
+			// hatching, because even "sequential" phases spread on the calendar in practice.
+			const isSpread = m.isSpread || (mode === 'realistic' && !m.isPreProject);
 			bars.push({
 				id,
 				name:         cat.name,
@@ -150,7 +153,7 @@
 				note:         m.note,
 				isPreProject: m.isPreProject,
 				isFullSpan:   m.isFullSpan,
-				isSpread:     m.isSpread,
+				isSpread,
 				items:        cat.items,
 			});
 		}
@@ -580,12 +583,9 @@
 		outline-offset: -1px;
 	}
 
-	/* Full-span bars (admin overhead) are thinner to show they're ambient */
+	/* Full-span bars (admin overhead) get slight transparency to show they're ambient */
 	.bar--fullspan {
-		top: 9px;
-		height: 12px;
-		border-radius: 3px;
-		opacity: 0.6;
+		opacity: 0.7;
 	}
 
 	/* Spread bars: diagonal hatching to show effort ≠ elapsed calendar time */
