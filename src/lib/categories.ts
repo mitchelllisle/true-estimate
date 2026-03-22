@@ -545,6 +545,18 @@ export function getCalendarWeeks(cats: Category[]): number | null {
 	return Math.round(tMax * 10) / 10;
 }
 
+/**
+ * A realistic estimate: the midpoint between total effort (pessimistic — nothing runs in parallel)
+ * and calendar time (optimistic — all parallel work lands perfectly).
+ * In practice, some parallelism happens but rarely goes as smoothly as modelled.
+ */
+export function getRealisticWeeks(cats: Category[]): number | null {
+	const total = totalWeeks(cats);
+	const cal = getCalendarWeeks(cats);
+	if (cal == null) return null;
+	return Math.round(((total + cal) / 2) * 10) / 10;
+}
+
 export type ElapsedEntry = {
 	id: string;
 	name: string;

@@ -31,3 +31,18 @@ if (typeof Element !== 'undefined' && !Element.prototype.animate) {
 			updatePlaybackRate: () => {}
 		}) as unknown as Animation;
 }
+
+// jsdom doesn't implement window.matchMedia; stub it so svelte/motion (tweened)
+// doesn't throw when components are rendered in tests.
+if (typeof window !== 'undefined' && !window.matchMedia) {
+	window.matchMedia = (query: string) => ({
+		matches: false,
+		media: query,
+		onchange: null,
+		addListener: () => {},
+		removeListener: () => {},
+		addEventListener: () => {},
+		removeEventListener: () => {},
+		dispatchEvent: () => false,
+	}) as unknown as MediaQueryList;
+}
