@@ -53,16 +53,15 @@
 	const tipRealistic   = $derived(realisticWeeks != null ? fmt(realisticWeeks) : '');
 	const tipOptimistic  = $derived(calWeeks       != null ? fmt(calWeeks)       : '');
 
-	// Tweened count-up animation
-	const dTotal     = tweened(uTotal,          { duration: 400, easing: cubicOut });
-	const dRealistic = tweened(uRealistic ?? 0, { duration: 400, easing: cubicOut });
-	const dCal       = tweened(uCal ?? 0,       { duration: 400, easing: cubicOut });
+	// Tweened count-up animation (initialised to 0; first $effect run jumps instantly to real value)
+	const dTotal     = tweened(0, { duration: 400, easing: cubicOut });
+	const dRealistic = tweened(0, { duration: 400, easing: cubicOut });
+	const dCal       = tweened(0, { duration: 400, easing: cubicOut });
 
-	let prevUnit = unit;
+	let prevUnit = '';
 	$effect(() => {
-		const quick = unit !== prevUnit;
+		const dur = unit !== prevUnit ? 0 : 400;
 		prevUnit = unit;
-		const dur = quick ? 0 : 400;
 		dTotal.set(uTotal,              { duration: dur });
 		dRealistic.set(uRealistic ?? 0, { duration: dur });
 		dCal.set(uCal ?? 0,             { duration: dur });
@@ -189,8 +188,6 @@
 		line-height: 1;
 		cursor: default;
 	}
-
-	.stat[data-tip]::after { content: none; }
 
 	.tip {
 		position: absolute;
