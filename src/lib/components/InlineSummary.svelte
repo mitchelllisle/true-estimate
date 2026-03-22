@@ -1,6 +1,8 @@
 <script lang="ts">
 	import type { Category } from '$lib/categories';
-	import { coreWeeks, hiddenWeeks, totalWeeks, type Unit, toUnit, UNIT_SHORT, buildCsv } from '$lib/categories';
+	import { coreWeeks, hiddenWeeks, totalWeeks, getCalendarWeeks, getRealisticWeeks, type Unit, toUnit, UNIT_SHORT, UNITS, buildCsv } from '$lib/categories';
+	import { tweened } from 'svelte/motion';
+	import { cubicOut } from 'svelte/easing';
 
 	let {
 		categories,
@@ -31,13 +33,45 @@
 		URL.revokeObjectURL(url);
 	}
 
-	const core    = $derived(coreWeeks(categories));
-	const hidden  = $derived(hiddenWeeks(categories));
-	const total   = $derived(totalWeeks(categories));
+	const core           = $derived(coreWeeks(categories));
+	const hidden         = $derived(hiddenWeeks(categories));
+	const total          = $derived(totalWeeks(categories));
+	const calWeeks       = $derived(getCalendarWeeks(categories));
+	const realisticWeeks = $derived(getRealisticWeeks(categories));
+	const uTotal         = $derived(toUnit(total, unit));
+	const uRealistic     = $derived(realisticWeeks != null ? toUnit(realisticWeeks, unit) : null);
+	const uCal           = $derived(calWeeks != null ? toUnit(calWeeks, unit) : null);
+	const uShort         = $derived(UNIT_SHORT[unit]);
+
+	// Keep for proportional bar
 	const uCore   = $derived(toUnit(core, unit));
 	const uHidden = $derived(toUnit(hidden, unit));
-	const uTotal  = $derived(toUnit(total, unit));
-	const uShort  = $derived(UNIT_SHORT[unit]);
+
+	// Hover tooltips — show value in every unit
+	const fmt = (weeks: number) => UNITS.map(u => `${toUnit(weeks, u)} ${UNIT_SHORT[u]}`).join(' · ');
+	const tipPessimistic = $derived(fmt(total));
+	const tipRealistic   = $derived(realisticWeeks != null ? fmt(realisticWeeks) : '');
+	const tipOptimistic  = $derived(calWeeks       != null ? fmt(calWeeks)       : '');
+
+	// Tweened count-up animation
+	const dTotal     = tweened(uTotal,          { duration: 400, easing: cubicOut });
+	const dRealistic = tweened(uRealistic ?? 0, { duration: 400, easing: cubicOut });
+	const dCal       = tweened(uCal ?? 0,       { duration: 400, easing: cubicOut });
+
+	let prevUnit = unit;
+	$effect(() => {
+		const quick = unit !== prevUnit;
+		prevUnit = unit;
+		const dur = quick ? 0 : 400;
+		dTotal.set(uTotal,              { duration: dur });
+		dRealistic.set(uRealistic ?? 0, { duration: dur });
+		dCal.set(uCal ?? 0,             { duration: dur });
+	});
+
+	function fmtNum(n: number): string {
+		const r = Math.round(n * 10) / 10;
+		return r % 1 === 0 ? String(Math.round(r)) : r.toFixed(1);
+	}
 
 	// Proportional bar segments — one per category (non-zero only)
 	const segments = $derived(
@@ -58,19 +92,24 @@
 		<!-- Stats -->
 		<div class="stats">
 			<span class="stat">
-				<span class="stat-label">Estimated</span>
-				<span class="stat-value core">{uCore}<span class="unit">{uShort}</span></span>
+				<span class="stat-label">Pessimistic</span>
+				<span class="stat-value pessimistic">{fmtNum($dTotal)}<span class="unit">{uShort}</span></span>
+				<span class="tip">{tipPessimistic}</span>
 			</span>
-			<span class="divider" aria-hidden="true">+</span>
-			<span class="stat">
-				<span class="stat-label">Hidden</span>
-				<span class="stat-value">{uHidden}<span class="unit">{uShort}</span></span>
-			</span>
-			<span class="divider" aria-hidden="true">=</span>
-			<span class="stat">
-				<span class="stat-label">Total</span>
-				<span class="stat-value total">{uTotal}<span class="unit">{uShort}</span></span>
-			</span>
+			{#if uRealistic != null}
+				<span class="divider" aria-hidden="true">→</span>
+				<span class="stat">
+					<span class="stat-label">Realistic</span>
+					<span class="stat-value realistic">~{fmtNum($dRealistic)}<span class="unit">{uShort}</span></span>
+					<span class="tip">{tipRealistic}</span>
+				</span>
+				<span class="divider" aria-hidden="true">→</span>
+				<span class="stat">
+					<span class="stat-label">Optimistic</span>
+					<span class="stat-value optimistic">~{fmtNum($dCal)}<span class="unit">{uShort}</span></span>
+					<span class="tip">{tipOptimistic}</span>
+				</span>
+			{/if}
 		</div>
 
 		<!-- Proportional color bar -->
@@ -143,11 +182,38 @@
 	}
 
 	.stat {
+		position: relative;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
 		line-height: 1;
+		cursor: default;
 	}
+
+	.stat[data-tip]::after { content: none; }
+
+	.tip {
+		position: absolute;
+		bottom: calc(100% + 8px);
+		left: 50%;
+		transform: translateX(-50%);
+		width: 200px;
+		background: var(--text);
+		color: var(--bg);
+		font-size: 0.73rem;
+		font-weight: 400;
+		line-height: 1.45;
+		padding: 0.45rem 0.65rem;
+		border-radius: 6px;
+		pointer-events: none;
+		opacity: 0;
+		transition: opacity 0.12s;
+		z-index: 200;
+		white-space: normal;
+		text-align: left;
+		box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+	}
+	.stat:hover .tip { opacity: 1; }
 
 	.stat-label {
 		font-size: 0.62rem;
@@ -165,8 +231,12 @@
 		color: var(--text);
 	}
 
-	.stat-value.core { color: #b58900; }
-	.stat-value.total { color: var(--text); }
+	.stat-value.pessimistic { color: var(--text); }
+	.stat-value.realistic   { color: #0d7a4e; }
+	.stat-value.optimistic  { color: #0369a1; }
+
+	:global([data-theme="dark"]) .stat-value.realistic  { color: #34d399; }
+	:global([data-theme="dark"]) .stat-value.optimistic { color: #38bdf8; }
 
 	.unit {
 		font-size: 0.65rem;

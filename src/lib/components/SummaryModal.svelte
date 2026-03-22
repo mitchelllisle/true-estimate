@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { fade, fly } from 'svelte/transition';
 	import type { Category } from '$lib/categories';
-	import { buildCsv, coreWeeks, totalWeeks, getCalendarWeeks, getElapsedBreakdown, getRiskAssessment, getEmptyWarnings, type Unit, toUnit, UNITS, UNIT_LABELS, UNIT_SHORT } from '$lib/categories';
+	import { buildCsv, coreWeeks, totalWeeks, getCalendarWeeks, getRealisticWeeks, getElapsedBreakdown, getRiskAssessment, getEmptyWarnings, type Unit, toUnit, UNITS, UNIT_LABELS, UNIT_SHORT } from '$lib/categories';
 	import GanttChart from './GanttChart.svelte';
 
 	let {
@@ -27,10 +27,13 @@
 	const pctCore  = $derived(total > 0 ? Math.round((core / total) * 100) : 0);
 	const overhead = $derived(core > 0 && total > core ? Math.round(((total - core) / core) * 100) : 0);
 
+	const realisticWeeks = $derived(getRealisticWeeks(categories));
+
 	const uCore      = $derived(toUnit(core, unit));
 	const uTotal     = $derived(toUnit(total, unit));
 	const uNonCore   = $derived(toUnit(total - core, unit));
 	const uCal       = $derived(calWeeks != null ? toUnit(calWeeks, unit) : null);
+	const uRealistic = $derived(realisticWeeks != null ? toUnit(realisticWeeks, unit) : null);
 	const uShort  = $derived(UNIT_SHORT[unit]);
 	const uLabel  = $derived(UNIT_LABELS[unit].toLowerCase());
 
@@ -132,20 +135,32 @@
 			<!-- Stats strip -->
 			{#if total > 0}
 				<div class="stats-strip">
-					<div class="stat">
+					<div class="stat stat--pessimistic">
 						<span class="stat-value">{uTotal}{uShort}</span>
 						<span class="stat-label">
 							total effort
-							<span class="stat-info" data-tip="The sum of person-time across every category — what you'd write on a timesheet if one person did all the work sequentially.">ⓘ</span>
+							<span class="stat-info" data-tip="Pessimistic: if nothing can be done in parallel, this is the total person-time required. Think of it as the worst-case wall-clock duration.">ⓘ</span>
 						</span>
+						<span class="stat-sublabel">pessimistic</span>
 					</div>
+					{#if uRealistic != null}
+						<div class="stat stat--realistic">
+							<span class="stat-value">~{uRealistic}{uShort}</span>
+							<span class="stat-label">
+								realistic estimate
+								<span class="stat-info" data-tip="The midpoint between pessimistic (all phases sequential) and optimistic (parallel phases land as modelled). In practice, some overlap happens but coordination, blockers, and context-switching eat into the theoretical saving — expect to land somewhere around here.">ⓘ</span>
+							</span>
+							<span class="stat-sublabel">realistic</span>
+						</div>
+					{/if}
 					{#if uCal != null}
 						<div class="stat stat--cal">
 							<span class="stat-value">~{uCal}{uShort}</span>
 							<span class="stat-label">
 								calendar time
-								<span class="stat-info" data-tip="Wall-clock duration from project start to finish. Less than total effort because several activities run concurrently on the calendar.">ⓘ</span>
+								<span class="stat-info" data-tip="Optimistic: if the estimates are accurate and the phases that typically run in parallel land smoothly. Best-case scenario.">ⓘ</span>
 							</span>
+							<span class="stat-sublabel">optimistic</span>
 						</div>
 					{/if}
 					{#if pctCore > 0}
@@ -172,10 +187,10 @@
 
 			{#if parallelWeeks > 0}
 				<div class="parallel-note">
-					<strong>{uParallel}{uShort} of work runs in parallel</strong> —
-					{concurrentDesc}.
-					<em>Effort</em> is the sum of person-time across all activities;
-					<em>calendar time</em> is the wall-clock duration from start to finish.
+					<strong>{uParallel}{uShort} of work runs in parallel</strong> — {concurrentDesc}.
+					The <em>pessimistic</em> total effort assumes none of this overlap happens.
+					The <em>optimistic</em> calendar time assumes the phases that typically run in parallel land smoothly, as modelled.
+					The <em>realistic</em> estimate splits the difference — in practice, some parallelism lands but coordination, blockers, and context-switching always eat into the theoretical saving.
 				</div>
 			{/if}
 
@@ -446,9 +461,28 @@
 		line-height: 1;
 		font-variant-numeric: tabular-nums;
 	}
-	.stat--cal .stat-value { color: #0369a1; }
+	.stat--pessimistic .stat-value { color: var(--text); }
+	.stat--realistic .stat-value   { color: #0d7a4e; }
+	.stat--cal .stat-value         { color: #0369a1; }
 
-	:global([data-theme="dark"]) .stat--cal .stat-value { color: #38bdf8; }
+	:global([data-theme="dark"]) .stat--realistic .stat-value { color: #34d399; }
+	:global([data-theme="dark"]) .stat--cal .stat-value       { color: #38bdf8; }
+
+	.stat-sublabel {
+		font-size: 0.65rem;
+		font-weight: 500;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		opacity: 0.55;
+		line-height: 1;
+		margin-top: -0.1rem;
+	}
+	.stat--pessimistic .stat-sublabel { color: var(--text-muted); }
+	.stat--realistic   .stat-sublabel { color: #0d7a4e; }
+	.stat--cal         .stat-sublabel { color: #0369a1; }
+
+	:global([data-theme="dark"]) .stat--realistic .stat-sublabel { color: #34d399; }
+	:global([data-theme="dark"]) .stat--cal        .stat-sublabel { color: #38bdf8; }
 
 	.stat-label {
 		font-size: 0.72rem;
