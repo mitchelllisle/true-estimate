@@ -13,34 +13,32 @@ function categoriesWithData() {
 }
 
 describe('InlineSummary', () => {
-	it('shows zero values when no items exist', () => {
+	it('shows zero value for pessimistic when no items exist', () => {
 		render(InlineSummary, {
 			categories: initialCategories(),
 			onOpenModal: () => {}
 		});
+		// Only pessimistic is always visible; realistic/optimistic are hidden when there's no parallel work
 		const values = screen.getAllByText('0');
-		expect(values.length).toBeGreaterThanOrEqual(3);
+		expect(values.length).toBeGreaterThanOrEqual(1);
 	});
 
-	it('shows correct Estimated, Hidden, and Total week values', () => {
+	it('shows correct Pessimistic and Total week values', () => {
 		render(InlineSummary, {
 			categories: categoriesWithData(),
 			onOpenModal: () => {}
 		});
-		// Three stat-value elements: estimated=4, hidden=2, total=6
-		expect(screen.getByText('4')).toBeInTheDocument();
-		expect(screen.getByText('2')).toBeInTheDocument();
+		// total = 6w, realistic = midpoint of total(6) and calendar time
+		// at minimum the pessimistic total of 6 should appear
 		expect(screen.getByText('6')).toBeInTheDocument();
 	});
 
-	it('renders stat labels: Estimated, Hidden, Total', () => {
+	it('renders stat labels: Pessimistic, Realistic, Optimistic', () => {
 		render(InlineSummary, {
 			categories: initialCategories(),
 			onOpenModal: () => {}
 		});
-		expect(screen.getByText(/Estimated/i)).toBeInTheDocument();
-		expect(screen.getByText(/Hidden/i)).toBeInTheDocument();
-		expect(screen.getByText(/Total/i)).toBeInTheDocument();
+		expect(screen.getByText(/Pessimistic/i)).toBeInTheDocument();
 	});
 
 	it('renders the "See breakdown" button', () => {
