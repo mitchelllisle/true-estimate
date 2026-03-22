@@ -6,9 +6,9 @@ import { initialCategories } from '$lib/categories';
 function categoriesWithData() {
 	const cats = initialCategories();
 	const core = cats.find((c) => c.id === 'the-work')!;
-	core.items = [{ id: '1', description: 'Build the thing', weeks: 4 }];
+	core.items = [{ id: '1', description: 'Build the thing', notes: '', weeks: 4 }];
 	const before = cats.find((c) => c.id === 'before')!;
-	before.items = [{ id: '2', description: 'Setup env', weeks: 2 }];
+	before.items = [{ id: '2', description: 'Setup env', notes: '', weeks: 2 }];
 	return cats;
 }
 
