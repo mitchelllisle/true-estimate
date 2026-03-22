@@ -1,8 +1,6 @@
 <script lang="ts">
 	import type { Category } from '$lib/categories';
 	import { coreWeeks, hiddenWeeks, totalWeeks, getCalendarWeeks, getRealisticWeeks, type Unit, toUnit, UNIT_SHORT, UNITS, buildCsv } from '$lib/categories';
-	import { tweened } from 'svelte/motion';
-	import { cubicOut } from 'svelte/easing';
 
 	let {
 		categories,
@@ -53,25 +51,6 @@
 	const tipRealistic   = $derived(realisticWeeks != null ? fmt(realisticWeeks) : '');
 	const tipOptimistic  = $derived(calWeeks       != null ? fmt(calWeeks)       : '');
 
-	// Tweened count-up animation (initialised to 0; first $effect run jumps instantly to real value)
-	const dTotal     = tweened(0, { duration: 400, easing: cubicOut });
-	const dRealistic = tweened(0, { duration: 400, easing: cubicOut });
-	const dCal       = tweened(0, { duration: 400, easing: cubicOut });
-
-	let prevUnit = '';
-	$effect(() => {
-		const dur = unit !== prevUnit ? 0 : 400;
-		prevUnit = unit;
-		dTotal.set(uTotal,              { duration: dur });
-		dRealistic.set(uRealistic ?? 0, { duration: dur });
-		dCal.set(uCal ?? 0,             { duration: dur });
-	});
-
-	function fmtNum(n: number): string {
-		const r = Math.round(n * 10) / 10;
-		return r % 1 === 0 ? String(Math.round(r)) : r.toFixed(1);
-	}
-
 	// Proportional bar segments — one per category (non-zero only)
 	const segments = $derived(
 		total > 0
@@ -92,20 +71,20 @@
 		<div class="stats">
 			<span class="stat">
 				<span class="stat-label">Pessimistic</span>
-				<span class="stat-value pessimistic">{fmtNum($dTotal)}<span class="unit">{uShort}</span></span>
+				<span class="stat-value pessimistic">{uTotal}<span class="unit">{uShort}</span></span>
 				<span class="tip">{tipPessimistic}</span>
 			</span>
 			{#if uRealistic != null}
 				<span class="divider" aria-hidden="true">→</span>
 				<span class="stat">
 					<span class="stat-label">Realistic</span>
-					<span class="stat-value realistic">~{fmtNum($dRealistic)}<span class="unit">{uShort}</span></span>
+					<span class="stat-value realistic">~{uRealistic}<span class="unit">{uShort}</span></span>
 					<span class="tip">{tipRealistic}</span>
 				</span>
 				<span class="divider" aria-hidden="true">→</span>
 				<span class="stat">
 					<span class="stat-label">Optimistic</span>
-					<span class="stat-value optimistic">~{fmtNum($dCal)}<span class="unit">{uShort}</span></span>
+					<span class="stat-value optimistic">~{uCal}<span class="unit">{uShort}</span></span>
 					<span class="tip">{tipOptimistic}</span>
 				</span>
 			{/if}
