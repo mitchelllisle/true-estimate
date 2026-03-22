@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { untrack } from 'svelte';
 	import type { Category, Item } from '$lib/categories';
 	import { type Unit, toUnit, UNIT_SHORT, UNIT_MULTIPLIERS } from '$lib/categories';
 
@@ -43,36 +42,10 @@
 
 	let expandedBars = $state(new Set<string>());
 
-	// When chart updates, expand any newly-added bars by default
+	// When chart updates, expand all bars that have items
 	$effect(() => {
 		if (!chart) return;
-
-		// Bar ids that currently exist and have items
-		const allIds = new Set(
-			chart.bars
-				.filter((b) => b.items.length > 0)
-				.map((b) => b.id)
-		);
-
-		// Read expandedBars without tracking it to avoid a reactive cycle
-		const current = untrack(() => expandedBars);
-
-		// Start with previously expanded bars that still exist
-		const next = new Set<string>();
-		for (const id of current) {
-			if (allIds.has(id)) {
-				next.add(id);
-			}
-		}
-
-		// Auto-expand any newly-added bars
-		for (const id of allIds) {
-			if (!next.has(id)) {
-				next.add(id);
-			}
-		}
-
-		expandedBars = next;
+		expandedBars = new Set(chart.bars.filter(b => b.items.length > 0).map(b => b.id));
 	});
 
 	function toggleBar(id: string) {
