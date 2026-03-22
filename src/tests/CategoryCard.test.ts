@@ -55,8 +55,8 @@ describe('CategoryCard', () => {
 	it('shows a week badge when items have week estimates', () => {
 		const cat = getCategory();
 		cat.items = [
-			{ id: '1', description: 'setup', weeks: 2 },
-			{ id: '2', description: 'config', weeks: 1 }
+			{ id: '1', description: 'setup', notes: '', weeks: 2 },
+			{ id: '2', description: 'config', notes: '', weeks: 1 }
 		];
 		render(CategoryCard, {
 			category: cat,

@@ -52,17 +52,29 @@
 	const tipOptimistic  = $derived(calWeeks       != null ? fmt(calWeeks)       : '');
 
 	// Proportional bar segments — one per category (non-zero only)
+	// Proportional bar segments — one per category (non-zero only)
 	const segments = $derived(
 		total > 0
 			? categories
 					.map((c) => ({
 						color: c.color,
 						name: c.name,
+						weeks: c.items.reduce((s, i) => s + (i.weeks ?? 0), 0),
 						pct: (c.items.reduce((s, i) => s + (i.weeks ?? 0), 0) / total) * 100
 					}))
 					.filter((s) => s.pct > 0)
 			: []
 	);
+
+	let hoveredSeg = $state<{ name: string; weeks: number; x: number } | null>(null);
+
+	function onSegEnter(e: MouseEvent, seg: { name: string; weeks: number; pct: number }) {
+		const wrap = (e.currentTarget as HTMLElement).closest('.color-bar-wrap') as HTMLElement;
+		const rect = wrap.getBoundingClientRect();
+		const segRect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+		hoveredSeg = { name: seg.name, weeks: seg.weeks, x: segRect.left + segRect.width / 2 - rect.left };
+	}
+	function onSegLeave() { hoveredSeg = null; }
 </script>
 
 <div class="bar-shell" role="complementary" aria-label="Estimation summary">
@@ -97,11 +109,18 @@
 					{#each segments as seg}
 						<div
 							class="seg"
+							role="presentation"
 							style="width: {seg.pct}%; background: {seg.color};"
-							title="{seg.name} — {Math.round(seg.pct)}%"
+							onmouseenter={(e) => onSegEnter(e, seg)}
+							onmouseleave={onSegLeave}
 						></div>
 					{/each}
 				</div>
+				{#if hoveredSeg}
+					<div class="seg-tip" style="left: {hoveredSeg.x}px">
+						{hoveredSeg.name} — {toUnit(hoveredSeg.weeks, unit)}{uShort}
+					</div>
+				{/if}
 			{:else}
 				<div class="color-bar empty">
 					<span class="empty-hint">Add items with week estimates to see the breakdown</span>
@@ -111,11 +130,11 @@
 
 		<!-- CTA -->
 		<div class="actions">
-			<button class="icon-btn upload-btn" onclick={onUpload} title="Upload CSV" aria-label="Upload CSV">
+			<button class="icon-btn upload-btn" onclick={onUpload} aria-label="Upload CSV">
 				<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
 				Upload
 			</button>
-			<button class="icon-btn download-btn" onclick={downloadCsv} disabled={total === 0} title="Download CSV" aria-label="Download CSV">
+			<button class="icon-btn download-btn" onclick={downloadCsv} disabled={total === 0} aria-label="Download CSV">
 				<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
 				Download
 			</button>
@@ -230,6 +249,7 @@
 	.color-bar-wrap {
 		flex: 1;
 		min-width: 0;
+		position: relative;
 	}
 
 	.color-bar {
@@ -238,6 +258,7 @@
 		display: flex;
 		overflow: hidden;
 		background: var(--border);
+		position: relative;
 	}
 
 	.color-bar.empty {
@@ -257,6 +278,24 @@
 	.seg {
 		height: 100%;
 		transition: width 300ms ease;
+		cursor: default;
+	}
+
+	.seg-tip {
+		position: absolute;
+		bottom: calc(100% + 8px);
+		transform: translateX(-50%);
+		white-space: nowrap;
+		background: var(--text);
+		color: var(--bg);
+		font-size: 0.73rem;
+		font-weight: 400;
+		line-height: 1.4;
+		padding: 0.35rem 0.6rem;
+		border-radius: 6px;
+		pointer-events: none;
+		z-index: 200;
+		box-shadow: 0 2px 8px rgba(0,0,0,0.18);
 	}
 
 	/* CTA */

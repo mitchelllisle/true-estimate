@@ -15,7 +15,6 @@
 		"deploy": "yarn build && gh-pages -d build"
 	},
 	"devDependencies": {
-		"@sveltejs/adapter-auto": "^7.0.0",
 		"@sveltejs/kit": "^2.50.2",
 		"@sveltejs/vite-plugin-svelte": "^6.2.4",
 		"@testing-library/jest-dom": "^6.9.1",

@@ -320,7 +320,7 @@ export const CATEGORY_EXAMPLES: Record<string, TeamExamples> = {
 	},
 };
 
-export function makeCategory(def: Omit<Category, 'items'>): Category {
+function makeCategory(def: Omit<Category, 'items'>): Category {
 	return { ...def, items: [] };
 }
 

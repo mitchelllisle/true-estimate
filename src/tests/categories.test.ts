@@ -52,7 +52,7 @@ describe('initialCategories()', () => {
 	it('returns a new array each call (no shared reference)', () => {
 		const a = initialCategories();
 		const b = initialCategories();
-		a[0].items.push({ id: '1', description: 'x', weeks: 1 });
+		a[0].items.push({ id: '1', description: 'x', notes: '', weeks: 1 });
 		expect(b[0].items).toHaveLength(0);
 	});
 });
@@ -62,16 +62,16 @@ describe('week helper functions', () => {
 		const cats = initialCategories();
 		// core "the-work" → 5w
 		const core = cats.find((c) => c.id === 'the-work')!;
-		core.items = [{ id: '1', description: 'build', weeks: 5 }];
+		core.items = [{ id: '1', description: 'build', notes: '', weeks: 5 }];
 		// "before" → 2w + 1w
 		const before = cats.find((c) => c.id === 'before')!;
 		before.items = [
-			{ id: '2', description: 'setup', weeks: 2 },
-			{ id: '3', description: 'config', weeks: 1 }
+			{ id: '2', description: 'setup', notes: '', weeks: 2 },
+			{ id: '3', description: 'config', notes: '', weeks: 1 }
 		];
 		// "around" → no estimate (null)
 		const around = cats.find((c) => c.id === 'around')!;
-		around.items = [{ id: '4', description: 'meetings', weeks: null }];
+		around.items = [{ id: '4', description: 'meetings', notes: '', weeks: null }];
 		return cats;
 	}
 
@@ -113,8 +113,8 @@ describe('buildCsv()', () => {
 		const cats = initialCategories();
 		const core = cats.find((c) => c.id === 'the-work')!;
 		core.items = [
-			{ id: '1', description: 'feature A', weeks: 3 },
-			{ id: '2', description: 'feature B', weeks: null }
+			{ id: '1', description: 'feature A', notes: '', weeks: 3 },
+			{ id: '2', description: 'feature B', notes: '', weeks: null }
 		];
 		const lines = buildCsv(cats).trim().split('\n');
 		expect(lines).toHaveLength(3); // header + 2
@@ -123,7 +123,7 @@ describe('buildCsv()', () => {
 	it('handles descriptions with quotes correctly', () => {
 		const cats = initialCategories();
 		const core = cats.find((c) => c.id === 'the-work')!;
-		core.items = [{ id: '1', description: 'said "hello"', weeks: 1 }];
+		core.items = [{ id: '1', description: 'said "hello"', notes: '', weeks: 1 }];
 		const csv = buildCsv(cats);
 		expect(csv).toContain('"said ""hello"""');
 	});
@@ -131,7 +131,7 @@ describe('buildCsv()', () => {
 	it('leaves Weeks column empty when weeks is null', () => {
 		const cats = initialCategories();
 		const core = cats.find((c) => c.id === 'the-work')!;
-		core.items = [{ id: '1', description: 'no estimate', weeks: null }];
+		core.items = [{ id: '1', description: 'no estimate', notes: '', weeks: null }];
 		const lines = buildCsv(cats).split('\n');
 		// last field should be empty string after trailing comma
 		expect(lines[1]).toMatch(/,$/);
